@@ -4,6 +4,7 @@ import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Check, Vote, AlertCircle, Trophy, Sparkles, ChevronDown, X, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { AudioPreview } from "@/components/audio-preview"
 import type { Page, User as UserType, Vote as VoteType } from "@/app/page"
 import type { Category, Candidate } from "@/lib/categories"
 
@@ -220,7 +221,16 @@ export function VoteSection({
                                 </div>
 
                                 {/* Vote button for this candidate */}
-                                <div className="p-3">
+                                <div className="p-3 space-y-2">
+                                  {/* Audio Preview */}
+                                  {candidate.audioFile && (
+                                    <AudioPreview
+                                      audioUrl={candidate.audioFile}
+                                      songTitle={candidate.candidateSong}
+                                      artistName={candidate.name}
+                                    />
+                                  )}
+                                  
                                   {!hasVoted ? (
                                     <Button
                                       variant={isSelected ? "default" : "outline"}

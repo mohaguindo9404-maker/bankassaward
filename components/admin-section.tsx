@@ -27,6 +27,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ImageUpload } from "@/components/image-upload"
+import { CandidateDetailModal } from "@/components/candidate-detail-modal"
+import { CandidateEditor } from "@/components/candidate-editor"
 import type { User, Vote } from "@/app/page"
 import type { Category, Candidate } from "@/lib/categories"
 
@@ -70,6 +72,9 @@ export function AdminSection({
   const [newAdminPassword, setNewAdminPassword] = useState("")
   const [confirmAdminPassword, setConfirmAdminPassword] = useState("")
   const [passwordMessage, setPasswordMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [showAddCategory, setShowAddCategory] = useState(false)
+  const [newCategory, setNewCategory] = useState({ name: "", subtitle: "" })
+  const [selectedCandidate, setSelectedCandidate] = useState<{ categoryId: string; candidate: Candidate } | null>(null)
 
   const tabs = [
     { id: "overview" as AdminTab, label: "Aperçu", icon: BarChart3 },
@@ -186,6 +191,26 @@ export function AdminSection({
     setNewAdminPassword("")
     setConfirmAdminPassword("")
     setTimeout(() => setPasswordMessage(null), 3000)
+  }
+
+  const handleAddCategory = () => {
+    if (!newCategory.name || !newCategory.subtitle) return
+    const category: Category = {
+      id: `category-${Date.now()}`,
+      name: newCategory.name,
+      subtitle: newCategory.subtitle,
+      candidates: [],
+      special: false,
+      isLeadershipPrize: false,
+    }
+    setCategories([...categories, category])
+    setNewCategory({ name: "", subtitle: "" })
+    setShowAddCategory(false)
+  }
+
+  const handleDeleteCategory = (categoryId: string) => {
+    setCategories(categories.filter((c) => c.id !== categoryId))
+    setSelectedCategory(null)
   }
 
   return (
@@ -442,23 +467,84 @@ export function AdminSection({
               exit={{ opacity: 0, y: -20 }}
               className="space-y-4"
             >
-              <h2 className="text-lg font-semibold">Gestion des Candidats</h2>
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg font-semibold">Gestion des Candidats et Catégories</h2>
+                <Button
+                  onClick={() => setShowAddCategory(true)}
+                  className="bg-gradient-to-r from-primary to-accent text-primary-foreground"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nouvelle Catégorie
+                </Button>
+              </div>
+
+              {/* Add Category Modal */}
+              <AnimatePresence>
+                {showAddCategory && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="bg-card border border-border/50 rounded-xl p-6"
+                  >
+                    <h3 className="font-semibold mb-4">Nouvelle Catégorie</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Nom de la catégorie</Label>
+                        <Input
+                          value={newCategory.name}
+                          onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                          placeholder="Ex: Meilleur Artiste"
+                        />
+                      </div>
+                      <div>
+                        <Label>Sous-titre</Label>
+                        <Input
+                          value={newCategory.subtitle}
+                          onChange={(e) => setNewCategory({ ...newCategory, subtitle: e.target.value })}
+                          placeholder="Description de la catégorie"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <Button onClick={handleAddCategory}>
+                        <Check className="w-4 h-4 mr-2" />
+                        Créer
+                      </Button>
+                      <Button variant="outline" onClick={() => setShowAddCategory(false)}>
+                        Annuler
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Category Selector */}
               <div className="flex flex-wrap gap-2">
                 {categories
                   .filter((c) => !c.isLeadershipPrize)
                   .map((cat) => (
-                    <Button
-                      key={cat.id}
-                      variant={selectedCategory === cat.id ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}
-                      className={selectedCategory === cat.id ? "bg-primary text-primary-foreground" : ""}
-                    >
-                      <FolderOpen className="w-4 h-4 mr-2" />
-                      {cat.name} ({cat.candidates.length})
-                    </Button>
+                    <div key={cat.id} className="flex items-center gap-1">
+                      <Button
+                        variant={selectedCategory === cat.id ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}
+                        className={selectedCategory === cat.id ? "bg-primary text-primary-foreground" : ""}
+                      >
+                        <FolderOpen className="w-4 h-4 mr-2" />
+                        {cat.name} ({cat.candidates.length})
+                      </Button>
+                      {!cat.isLeadershipPrize && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteCategory(cat.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
                   ))}
               </div>
 
@@ -491,16 +577,37 @@ export function AdminSection({
                                   <img
                                     src={candidate.image || "/placeholder.svg"}
                                     alt={candidate.name}
-                                    className="w-16 h-16 rounded-xl object-cover"
+                                    className="w-16 h-16 rounded-xl object-cover cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+                                    onClick={() => setSelectedCandidate({ categoryId: selectedCategory, candidate })}
                                   />
-                                  <div>
+                                  <div className="flex-1">
                                     <p className="font-medium">{candidate.name}</p>
-                                    <p className="text-sm text-muted-foreground line-clamp-2">{candidate.bio}</p>
-                                    {candidate.achievements && candidate.achievements.length > 0 && (
-                                      <p className="text-xs text-primary mt-1">
-                                        {candidate.achievements.length} réalisation(s)
-                                      </p>
+                                    {candidate.alias && (
+                                      <p className="text-sm text-primary">{candidate.alias}</p>
                                     )}
+                                    <p className="text-sm text-muted-foreground line-clamp-2">{candidate.bio}</p>
+                                    <div className="flex gap-2 mt-1">
+                                      {candidate.achievements && candidate.achievements.length > 0 && (
+                                        <p className="text-xs text-primary">
+                                          {candidate.achievements.length} réalisation(s)
+                                        </p>
+                                      )}
+                                      {candidate.songCount && (
+                                        <p className="text-xs text-muted-foreground">
+                                          {candidate.songCount} chansons
+                                        </p>
+                                      )}
+                                      {candidate.candidateSong && (
+                                        <p className="text-xs text-muted-foreground">
+                                          "{candidate.candidateSong}"
+                                        </p>
+                                      )}
+                                      {candidate.audioFile && (
+                                        <p className="text-xs text-emerald-600 font-medium">
+                                          🎵 Audio disponible
+                                        </p>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                                 <div className="flex gap-1">
@@ -787,65 +894,16 @@ export function AdminSection({
           )}
         </AnimatePresence>
       </div>
+
+      {/* Candidate Detail Modal */}
+      {selectedCandidate && (
+        <CandidateDetailModal
+          candidate={selectedCandidate.candidate}
+          category={categories.find((c) => c.id === selectedCandidate.categoryId)!}
+          onClose={() => setSelectedCandidate(null)}
+        />
+      )}
     </section>
   )
 }
 
-function CandidateEditor({
-  candidate,
-  onSave,
-  onCancel,
-}: {
-  candidate: Candidate
-  onSave: (candidate: Candidate) => void
-  onCancel: () => void
-}) {
-  const [editedCandidate, setEditedCandidate] = useState<Candidate>(candidate)
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <Label>Nom</Label>
-        <Input
-          value={editedCandidate.name}
-          onChange={(e) => setEditedCandidate({ ...editedCandidate, name: e.target.value })}
-        />
-      </div>
-
-      <ImageUpload
-        currentImage={editedCandidate.image}
-        onImageChange={(url) => setEditedCandidate({ ...editedCandidate, image: url })}
-        label="Photo du candidat"
-      />
-
-      <div>
-        <Label>Biographie</Label>
-        <Textarea
-          value={editedCandidate.bio}
-          onChange={(e) => setEditedCandidate({ ...editedCandidate, bio: e.target.value })}
-          rows={4}
-        />
-      </div>
-      <div>
-        <Label>Réalisations (une par ligne)</Label>
-        <Textarea
-          value={editedCandidate.achievements?.join("\n") || ""}
-          onChange={(e) =>
-            setEditedCandidate({ ...editedCandidate, achievements: e.target.value.split("\n").filter((a) => a.trim()) })
-          }
-          rows={4}
-        />
-      </div>
-      <div className="flex gap-2">
-        <Button onClick={() => onSave(editedCandidate)} size="sm">
-          <Save className="w-4 h-4 mr-2" />
-          Enregistrer
-        </Button>
-        <Button variant="outline" onClick={onCancel} size="sm">
-          <X className="w-4 h-4 mr-2" />
-          Annuler
-        </Button>
-      </div>
-    </div>
-  )
-}
