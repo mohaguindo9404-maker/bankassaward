@@ -213,7 +213,7 @@ export function AuthSection({ setCurrentPage, setCurrentUser }: AuthSectionProps
                   <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
                     <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-2">
                       <Shield className="w-4 h-4" />
-                      Admin: admin@bankassawards.com / admin2024
+                      Admin: Connectez-vous avec un compte administrateur pour accéder à la section admin 
                     </p>
                   </div>
 
