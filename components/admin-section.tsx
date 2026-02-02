@@ -17,6 +17,7 @@ import {
   Crown,
   AlertTriangle,
   Check,
+  AlertCircle,
   UserPlus,
   FolderOpen,
   Lock,
@@ -31,12 +32,9 @@ import { CandidateDetailModal } from "@/components/candidate-detail-modal"
 import { CandidateEditor } from "@/components/candidate-editor"
 import type { User, Vote } from "@/hooks/use-api-data"
 import type { Category, Candidate } from "@/lib/categories"
+import { useUsers, useCategories } from "@/hooks/use-api-data"
 
 interface AdminSectionProps {
-  users: User[]
-  setUsers: (users: User[]) => void
-  categories: Category[]
-  setCategories: (categories: Category[]) => void
   votes: Vote[]
   leadershipRevealed: boolean
   setLeadershipRevealed: (revealed: boolean) => void
@@ -46,16 +44,15 @@ interface AdminSectionProps {
 type AdminTab = "overview" | "users" | "candidates" | "leadership" | "settings"
 
 export function AdminSection({
-  users,
-  setUsers,
-  categories,
-  setCategories,
   votes,
   leadershipRevealed,
   setLeadershipRevealed,
   currentUser,
 }: AdminSectionProps) {
+  const { users, createUser, deleteUser, refetch: refetchUsers } = useUsers()
+  const { categories, createCategory, deleteCategory, refetch: refetchCategories } = useCategories()
   const [activeTab, setActiveTab] = useState<AdminTab>("overview")
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
   const [editingCandidate, setEditingCandidate] = useState<{
     categoryId: string
     candidate: Candidate | null
@@ -88,24 +85,41 @@ export function AdminSection({
   const totalUsers = users.filter((u) => u.role !== "SUPER_ADMIN").length
   const totalCandidates = categories.reduce((acc, cat) => acc + cat.candidates.length, 0)
 
-  const handleAddUser = () => {
-    if (!newUser.name || !newUser.email || !newUser.password) return
-    const user: User & { password: string } = {
-      id: Date.now().toString(),
-      name: newUser.name,
-      email: newUser.email,
-      password: newUser.password,
-      role: "VOTER",
-      createdAt: new Date().toISOString(),
+  const handleAddUser = async () => {
+    if (!newUser.name || !newUser.email || !newUser.password) {
+      setMessage({ type: "error", text: "Veuillez remplir tous les champs" })
+      setTimeout(() => setMessage(null), 3000)
+      return
     }
-    setUsers([...users, user as User])
-    setNewUser({ name: "", email: "", password: "" })
-    setShowAddUser(false)
+    
+    try {
+      await createUser(newUser as any)
+      setNewUser({ name: "", email: "", password: "" })
+      setShowAddUser(false)
+      // Recharger les données pour voir le nouvel utilisateur
+      await refetchUsers()
+      setMessage({ type: "success", text: "Utilisateur créé avec succès !" })
+      setTimeout(() => setMessage(null), 3000)
+    } catch (error) {
+      console.error("Erreur lors de la création de l'utilisateur:", error)
+      setMessage({ type: "error", text: "Erreur lors de la création de l'utilisateur" })
+      setTimeout(() => setMessage(null), 3000)
+    }
   }
 
-  const handleDeleteUser = (userId: string) => {
-    setUsers(users.filter((u) => u.id !== userId))
-    setConfirmDelete(null)
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      await deleteUser(userId)
+      setConfirmDelete(null)
+      // Recharger les données pour voir la suppression
+      await refetchUsers()
+      setMessage({ type: "success", text: "Utilisateur supprimé avec succès !" })
+      setTimeout(() => setMessage(null), 3000)
+    } catch (error) {
+      console.error("Erreur lors de la suppression de l'utilisateur:", error)
+      setMessage({ type: "error", text: "Erreur lors de la suppression de l'utilisateur" })
+      setTimeout(() => setMessage(null), 3000)
+    }
   }
 
   const handleAddCandidate = (categoryId: string) => {
@@ -193,24 +207,43 @@ export function AdminSection({
     setTimeout(() => setPasswordMessage(null), 3000)
   }
 
-  const handleAddCategory = () => {
-    if (!newCategory.name || !newCategory.subtitle) return
-    const category: Category = {
-      id: `category-${Date.now()}`,
-      name: newCategory.name,
-      subtitle: newCategory.subtitle,
-      candidates: [],
-      special: false,
-      isLeadershipPrize: false,
+  const handleAddCategory = async () => {
+    if (!newCategory.name) {
+      setMessage({ type: "error", text: "Veuillez remplir le nom de la catégorie" })
+      setTimeout(() => setMessage(null), 3000)
+      return
     }
-    setCategories([...categories, category])
-    setNewCategory({ name: "", subtitle: "" })
-    setShowAddCategory(false)
+    try {
+      await createCategory({
+        name: newCategory.name,
+        subtitle: newCategory.subtitle || "",
+        special: false,
+        isLeadershipPrize: false,
+      })
+      setNewCategory({ name: "", subtitle: "" })
+      setShowAddCategory(false)
+      await refetchCategories()
+      setMessage({ type: "success", text: "Catégorie créée avec succès !" })
+      setTimeout(() => setMessage(null), 3000)
+    } catch (error) {
+      console.error("Erreur lors de la création de la catégorie:", error)
+      setMessage({ type: "error", text: "Erreur lors de la création de la catégorie" })
+      setTimeout(() => setMessage(null), 3000)
+    }
   }
 
-  const handleDeleteCategory = (categoryId: string) => {
-    setCategories(categories.filter((c) => c.id !== categoryId))
-    setSelectedCategory(null)
+  const handleDeleteCategory = async (categoryId: string) => {
+    try {
+      await deleteCategory(categoryId)
+      setSelectedCategory(null)
+      await refetchCategories()
+      setMessage({ type: "success", text: "Catégorie supprimée avec succès !" })
+      setTimeout(() => setMessage(null), 3000)
+    } catch (error) {
+      console.error("Erreur lors de la suppression de la catégorie:", error)
+      setMessage({ type: "error", text: "Erreur lors de la suppression de la catégorie" })
+      setTimeout(() => setMessage(null), 3000)
+    }
   }
 
   return (
@@ -228,6 +261,31 @@ export function AdminSection({
             </div>
           </div>
         </motion.div>
+
+        {/* Messages */}
+        <AnimatePresence>
+          {message && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className={`mb-6 p-4 rounded-lg border ${
+                message.type === "success"
+                  ? "bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400"
+                  : "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                {message.type === "success" ? (
+                  <Check className="w-4 h-4" />
+                ) : (
+                  <AlertCircle className="w-4 h-4" />
+                )}
+                <span className="text-sm font-medium">{message.text}</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">

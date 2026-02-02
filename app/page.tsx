@@ -126,10 +126,6 @@ export default function BankassAwards() {
           )}
           {currentPage === "admin" && isSuperAdmin && (
             <AdminSection
-              users={users}
-              setUsers={() => {}} // Les users sont gérés par le hook API
-              categories={categories}
-              setCategories={() => {}} // Les catégories sont gérées par le hook API
               votes={votes}
               leadershipRevealed={leadershipRevealed}
               setLeadershipRevealed={setLeadershipRevealed}
