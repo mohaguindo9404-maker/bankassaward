@@ -51,7 +51,7 @@ export function AdminSection({
 }: AdminSectionProps) {
   const { users, createUser, deleteUser, refetch: refetchUsers } = useUsers()
   const { categories, createCategory, deleteCategory, refetch: refetchCategories } = useCategories()
-  const { createCandidate, refetch: refetchCandidates } = useCandidates()
+  const { createCandidate, updateCandidate, refetch: refetchCandidates } = useCandidates()
   const [activeTab, setActiveTab] = useState<AdminTab>("overview")
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
   const [editingCandidate, setEditingCandidate] = useState<{
@@ -143,31 +143,32 @@ export function AdminSection({
     }
   }
 
-  const handleSaveCandidate = (categoryId: string, candidate: Candidate) => {
-    setCategories(
-      categories.map((cat) =>
-        cat.id === categoryId
-          ? {
-              ...cat,
-              candidates: cat.candidates.map((c) => (c.id === candidate.id ? candidate : c)),
-            }
-          : cat,
-      ),
-    )
-    setEditingCandidate(null)
+  const handleSaveCandidate = async (categoryId: string, candidate: Candidate) => {
+    try {
+      await updateCandidate(candidate.id, candidate)
+      await refetchCategories() // Recharger les catégories pour voir les modifications
+      setEditingCandidate(null)
+      setMessage({ type: "success", text: "Candidat mis à jour avec succès !" })
+      setTimeout(() => setMessage(null), 3000)
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour du candidat:", error)
+      setMessage({ type: "error", text: "Erreur lors de la mise à jour du candidat" })
+      setTimeout(() => setMessage(null), 3000)
+    }
   }
 
-  const handleDeleteCandidate = (categoryId: string, candidateId: string) => {
-    setCategories(
-      categories.map((cat) =>
-        cat.id === categoryId
-          ? {
-              ...cat,
-              candidates: cat.candidates.filter((c) => c.id !== candidateId),
-            }
-          : cat,
-      ),
-    )
+  const handleDeleteCandidate = async (categoryId: string, candidateId: string) => {
+    try {
+      const response = await fetch(`/api/candidates?id=${candidateId}`, { method: 'DELETE' })
+      if (!response.ok) throw new Error('Erreur lors de la suppression du candidat')
+      await refetchCategories() // Recharger les catégories pour voir les modifications
+      setMessage({ type: "success", text: "Candidat supprimé avec succès !" })
+      setTimeout(() => setMessage(null), 3000)
+    } catch (error) {
+      console.error("Erreur lors de la suppression du candidat:", error)
+      setMessage({ type: "error", text: "Erreur lors de la suppression du candidat" })
+      setTimeout(() => setMessage(null), 3000)
+    }
   }
 
   const handleStartEditLeadership = () => {
@@ -180,20 +181,25 @@ export function AdminSection({
     }
   }
 
-  const handleSaveLeadership = () => {
-    setCategories(
-      categories.map((cat) =>
-        cat.isLeadershipPrize
-          ? {
-              ...cat,
-              preAssignedWinnerBio: leadershipBio,
-              preAssignedWinnerAchievements: leadershipAchievements.split("\n").filter((a) => a.trim()),
-              preAssignedWinnerImage: leadershipImage,
-            }
-          : cat,
-      ),
-    )
-    setEditingLeadership(false)
+  const handleSaveLeadership = async () => {
+    try {
+      const leadershipCategory = categories.find((c) => c.isLeadershipPrize)
+      if (leadershipCategory) {
+        await updateCategory(leadershipCategory.id, {
+          preAssignedWinnerBio: leadershipBio,
+          preAssignedWinnerAchievements: leadershipAchievements.split("\n").filter((a) => a.trim()),
+          preAssignedWinnerImage: leadershipImage,
+        })
+        await refetchCategories() // Recharger les catégories pour voir les modifications
+        setEditingLeadership(false)
+        setMessage({ type: "success", text: "Prix Leadership mis à jour avec succès !" })
+        setTimeout(() => setMessage(null), 3000)
+      }
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour du prix Leadership:", error)
+      setMessage({ type: "error", text: "Erreur lors de la mise à jour du prix Leadership" })
+      setTimeout(() => setMessage(null), 3000)
+    }
   }
 
   const handlePasswordChange = () => {

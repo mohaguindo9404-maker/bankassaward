@@ -237,12 +237,36 @@ export function useCandidates(categoryId?: string) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(candidateData)
       })
-      if (!response.ok) throw new Error('Erreur lors de la création du candidat')
-      const newCandidate = await response.json()
-      setCandidates(prev => [...prev, newCandidate])
-      return newCandidate
-    } catch (err) {
-      throw new Error(err instanceof Error ? err.message : 'Erreur inconnue')
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors de la création du candidat')
+      }
+      
+      await fetchCandidates()
+      return await response.json()
+    } catch (error) {
+      console.error('Erreur:', error)
+      throw error
+    }
+  }, [])
+
+  const updateCandidate = useCallback(async (id: string, candidateData: any) => {
+    try {
+      const response = await fetch('/api/candidates', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...candidateData })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors de la mise à jour du candidat')
+      }
+      
+      await fetchCandidates()
+      return await response.json()
+    } catch (error) {
+      console.error('Erreur:', error)
+      throw error
     }
   }, [])
 
@@ -250,7 +274,7 @@ export function useCandidates(categoryId?: string) {
     fetchCandidates()
   }, [fetchCandidates])
 
-  return { candidates, loading, error, refetch: fetchCandidates, createCandidate }
+  return { candidates, loading, error, refetch: fetchCandidates, createCandidate, updateCandidate }
 }
 
 // Hook pour les votes
