@@ -87,9 +87,12 @@ export function VoteSection({
       } else {
         const error = await response.json()
         console.error("Erreur lors du vote:", error)
+        // Afficher un message d'erreur à l'utilisateur
+        alert(error.error || "Erreur lors du vote")
       }
     } catch (error) {
       console.error("Erreur lors du vote:", error)
+      alert("Erreur de connexion. Veuillez réessayer.")
     }
   }
 

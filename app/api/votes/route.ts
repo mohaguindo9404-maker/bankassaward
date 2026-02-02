@@ -28,10 +28,10 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { userId, categoryId, candidateId, candidateName } = body
+    const { userId, categoryId, candidateName } = body
 
     // Validation
-    if (!userId || !categoryId || !candidateId || !candidateName) {
+    if (!userId || !categoryId || !candidateName) {
       return NextResponse.json({ error: 'Tous les champs sont requis' }, { status: 400 })
     }
 
@@ -53,7 +53,6 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: userId,
         category_id: categoryId,
-        candidate_id: candidateId,
         candidate_name: candidateName,
         timestamp: Date.now()
       })
@@ -61,11 +60,13 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
+      console.error("Erreur Supabase:", error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json(data, { status: 201 })
   } catch (error) {
+    console.error("Erreur serveur:", error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
