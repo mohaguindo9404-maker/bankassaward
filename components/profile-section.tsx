@@ -76,7 +76,7 @@ export function ProfileSection({
   const userVotes = votes.filter((v) => v.userId === currentUser.id)
   const votedCategories = userVotes.length
   const totalCategories = categories.filter((c) => !c.isLeadershipPrize).length
-  const isSuperAdmin = currentUser.role === "SUPER_ADMIN"
+  const isSuperAdmin = currentUser.role === "super_admin"
 
   const getInitials = (name: string) => {
     return name

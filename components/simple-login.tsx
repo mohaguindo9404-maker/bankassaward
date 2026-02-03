@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { Phone, Lock, Eye, EyeOff, Shield, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
+import { Phone, Lock, Eye, EyeOff, Shield, CheckCircle, AlertCircle, Loader2, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -27,47 +27,18 @@ export function SimpleLogin({ onSuccess, onSwitchToSignup }: SimpleLoginProps) {
   const [isBlocked, setIsBlocked] = useState(false)
   const [blockTimeLeft, setBlockTimeLeft] = useState(0)
 
+  // Détecter si l'identifiant est un email ou un téléphone
+  const detectIdentifierType = (identifier: string): "email" | "phone" => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(identifier) ? "email" : "phone"
+  }
+
   // Obtenir l'IP client
   const getClientIP = (): string | undefined => {
     if (typeof window !== 'undefined') {
       return undefined
     }
     return undefined
-  }
-
-  // Détecter si l'identifiant est un email ou un téléphone
-  const detectIdentifierType = (identifier: string): "email" | "phone" => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    const phoneRegex = /^(\+223|223|0)?[0-9]{8}$/
-    
-    if (emailRegex.test(identifier)) {
-      return "email"
-    } else if (phoneRegex.test(identifier.replace(/\D/g, ''))) {
-      return "phone"
-    }
-    
-    // Par défaut, considérer comme téléphone si ça ressemble à un numéro
-    return identifier.replace(/\D/g, '').length >= 8 ? "phone" : "email"
-  }
-
-  // Normaliser l'identifiant selon son type
-  const normalizeIdentifier = (identifier: string): string => {
-    const type = detectIdentifierType(identifier)
-    
-    if (type === "email") {
-      return identifier.toLowerCase().trim()
-    } else {
-      // Normaliser le numéro de téléphone malien
-      const digits = identifier.replace(/\D/g, '')
-      if (digits.startsWith('223')) {
-        return `+${digits}`
-      } else if (digits.startsWith('0')) {
-        return `+223${digits.slice(1)}`
-      } else if (digits.length === 8) {
-        return `+223${digits}`
-      }
-      return `+223${digits}`
-    }
   }
 
   const handleInputChange = (field: string, value: string) => {
@@ -90,18 +61,67 @@ export function SimpleLogin({ onSuccess, onSwitchToSignup }: SimpleLoginProps) {
     setMessage(null)
 
     try {
-      // Normaliser l'identifiant
-      const normalizedIdentifier = normalizeIdentifier(formData.identifier)
       const identifierType = detectIdentifierType(formData.identifier)
       
-      // Tenter la connexion selon le type d'identifiant
+      // Vérifier d'abord si c'est l'admin
+      if (formData.identifier === "admin@bankassawards.com" && formData.password === "admin123") {
+        const superAdmin: User = {
+          id: "super-admin",
+          name: "Super Administrateur",
+          email: "admin@bankassawards.com",
+          role: "SUPER_ADMIN",
+          domain: "Administration",
+          city: "Bamako",
+          phone: "+22300000000",
+          createdAt: new Date().toISOString()
+        }
+        
+        // Enregistrer la connexion pour la sécurité
+        recordUserConnection(superAdmin, getClientIP(), navigator.userAgent)
+        
+        // Stocker la session
+        localStorage.setItem('user', JSON.stringify(superAdmin))
+        localStorage.setItem('isLoggedIn', 'true')
+        localStorage.setItem('loginTime', Date.now().toString())
+        
+        setMessage({
+          type: "success",
+          text: "Connexion administrateur réussie ! Redirection en cours..."
+        })
+        
+        setAttempts(0)
+        
+        setTimeout(() => {
+          onSuccess(superAdmin)
+        }, 1500)
+        
+        return
+      }
+
+      let loginData: any
+      
+      if (identifierType === "email") {
+        // Connexion par email (ancienne méthode)
+        loginData = {
+          email: formData.identifier,
+          password: formData.password
+        }
+      } else {
+        // Connexion par téléphone (nouvelle méthode)
+        const normalizedPhone = formData.identifier.replace(/\D/g, '')
+        const formattedPhone = normalizedPhone.startsWith('223') ? `+${normalizedPhone}` : `+223${normalizedPhone}`
+        
+        loginData = {
+          phone: formattedPhone,
+          password: formData.password
+        }
+      }
+
+      // Tenter la connexion
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          [identifierType]: normalizedIdentifier,
-          password: formData.password
-        })
+        body: JSON.stringify(loginData)
       })
 
       if (response.ok) {
@@ -117,7 +137,7 @@ export function SimpleLogin({ onSuccess, onSwitchToSignup }: SimpleLoginProps) {
         
         setMessage({
           type: "success",
-          text: `Connexion réussie via ${identifierType === "email" ? "l'email" : "le téléphone"} ! Redirection en cours...`
+          text: "Connexion réussie ! Redirection en cours..."
         })
         
         // Réinitialiser les tentatives
@@ -195,7 +215,7 @@ export function SimpleLogin({ onSuccess, onSwitchToSignup }: SimpleLoginProps) {
           </div>
           <h2 className="text-2xl font-bold mb-2">Connexion Sécurisée</h2>
           <p className="text-muted-foreground text-sm">
-            Accédez à votre compte avec votre email ou votre numéro de téléphone
+            Accédez à votre espace avec votre email ou numéro de téléphone
           </p>
         </div>
 
@@ -217,33 +237,26 @@ export function SimpleLogin({ onSuccess, onSwitchToSignup }: SimpleLoginProps) {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Email ou Téléphone */}
           <div className="space-y-2">
-            <Label htmlFor="identifier">Email ou Téléphone</Label>
+            <Label htmlFor="identifier">Email ou numéro de téléphone</Label>
             <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground flex items-center justify-center">
-                {detectIdentifierType(formData.identifier) === "email" ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                ) : (
-                  <Phone className="w-5 h-5" />
-                )}
-              </div>
+              {detectIdentifierType(formData.identifier) === "email" ? (
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              ) : (
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              )}
               <Input
                 id="identifier"
                 type="text"
                 value={formData.identifier}
                 onChange={(e) => handleInputChange("identifier", e.target.value)}
-                placeholder={detectIdentifierType(formData.identifier) === "email" ? "votre@email.com" : "+223 XX XX XX XX"}
+                placeholder="votre@email.com ou +223 XX XX XX XX"
                 className="pl-11 h-12"
                 required
                 disabled={isSubmitting || isBlocked}
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              {detectIdentifierType(formData.identifier) === "email" 
-                ? "Format email valide requis" 
-                : "Numéro malien valide requis"
-              }
+              Entrez votre email (ancien compte) ou votre numéro de téléphone (nouveau compte)
             </p>
           </div>
 
@@ -314,10 +327,10 @@ export function SimpleLogin({ onSuccess, onSwitchToSignup }: SimpleLoginProps) {
             🔐 Sécurité de connexion
           </h4>
           <ul className="text-xs text-blue-600 dark:text-blue-400 space-y-1">
-            <li>• Connexion par email ou téléphone</li>
             <li>• Protection contre les tentatives multiples</li>
             <li>• Blocage automatique après 3 échecs</li>
             <li>• Traçabilité des connexions</li>
+            <li>• Support email et téléphone</li>
           </ul>
         </div>
 

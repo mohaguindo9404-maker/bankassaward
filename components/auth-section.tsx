@@ -5,10 +5,10 @@ import { motion, AnimatePresence } from "framer-motion"
 import { SimpleLogin } from "@/components/simple-login"
 import { SimpleSignup } from "@/components/simple-signup"
 import { useUsers } from "@/hooks/use-api-data"
-import type { User, Page } from "@/app/page"
+import type { User } from "@/hooks/use-api-data"
 
 interface AuthSectionProps {
-  setCurrentPage: (page: Page) => void
+  setCurrentPage: (page: string) => void
   setCurrentUser: (user: User | null) => void
 }
 

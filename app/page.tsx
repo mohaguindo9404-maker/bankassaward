@@ -14,8 +14,6 @@ import { useUsers, useCategories, useVotes, useCurrentUser } from "@/hooks/use-a
 // import { isAccessBlockedServer, isAccessBlocked } from "@/lib/access-control"
 import type { User, Category, Vote } from "@/hooks/use-api-data"
 
-export type { User, Vote } from "@/hooks/use-api-data"
-
 export type UserRole = "VOTER" | "SUPER_ADMIN"
 
 export type Page = "home" | "auth" | "vote" | "results" | "profile" | "admin"
