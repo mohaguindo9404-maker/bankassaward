@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { UserIcon, MapPin, Mail, Briefcase, Shield, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
+import { UserIcon, MapPin, Mail, Phone, Briefcase, Shield, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,6 +19,7 @@ export function SimpleSignup({ onSuccess, onSwitchToLogin, existingUsers }: Simp
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
+    phone: "",
     domain: "",
     city: "",
     password: ""
@@ -53,7 +54,7 @@ export function SimpleSignup({ onSuccess, onSwitchToLogin, existingUsers }: Simp
 
     try {
       // Validation simple
-      if (!formData.fullName || !formData.email || !formData.password || !formData.domain || !formData.city) {
+      if (!formData.fullName || !formData.email || !formData.phone || !formData.password || !formData.domain || !formData.city) {
         setMessage({
           type: "error",
           text: "Tous les champs sont obligatoires"
@@ -73,6 +74,18 @@ export function SimpleSignup({ onSuccess, onSwitchToLogin, existingUsers }: Simp
         return
       }
 
+      // Valider le format du téléphone (format malien)
+      const phoneRegex = /^(\+223)?[0-9]{8}$/
+      const cleanPhone = formData.phone.replace(/\D/g, '')
+      if (!phoneRegex.test(cleanPhone) || cleanPhone.length !== 8) {
+        setMessage({
+          type: "error",
+          text: "Veuillez entrer un numéro de téléphone malien valide (8 chiffres)"
+        })
+        setIsSubmitting(false)
+        return
+      }
+
       // Vérifier si l'email existe déjà
       const emailExists = existingUsers.some(user => 
         user.email && user.email.toLowerCase() === formData.email.toLowerCase()
@@ -87,6 +100,20 @@ export function SimpleSignup({ onSuccess, onSwitchToLogin, existingUsers }: Simp
         return
       }
 
+      // Vérifier si le téléphone existe déjà
+      const phoneExists = existingUsers.some(user => 
+        user.phone && user.phone.replace(/\D/g, '') === cleanPhone
+      )
+
+      if (phoneExists) {
+        setMessage({
+          type: "error",
+          text: "Ce numéro de téléphone est déjà utilisé. Veuillez vous connecter."
+        })
+        setIsSubmitting(false)
+        return
+      }
+
       // Créer l'utilisateur directement
       const response = await fetch('/api/users', {
         method: 'POST',
@@ -94,6 +121,7 @@ export function SimpleSignup({ onSuccess, onSwitchToLogin, existingUsers }: Simp
         body: JSON.stringify({
           name: formData.fullName,
           email: formData.email,
+          phone: `+223${cleanPhone}`, // Format international malien
           password: formData.password,
           domain: formData.domain,
           city: formData.city,
@@ -189,6 +217,26 @@ export function SimpleSignup({ onSuccess, onSwitchToLogin, existingUsers }: Simp
                 required
               />
             </div>
+          </div>
+
+          {/* Téléphone */}
+          <div className="space-y-2">
+            <Label htmlFor="phone">Numéro de téléphone</Label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleInputChange("phone", e.target.value)}
+                placeholder="+223 XX XX XX XX"
+                className="pl-11 h-12"
+                required
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Format: +223 suivi de 8 chiffres (ex: +223 76 12 34 56)
+            </p>
           </div>
 
           {/* Mot de passe */}
