@@ -1,0 +1,75 @@
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Modern gradients -->
+  <defs>
+    <linearGradient id="primaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF6B35;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F7931E;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="secondaryGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1E293B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#334155;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feFlood flood-color="#000000" flood-opacity="0.1"/>
+      <feComposite in2="offsetblur" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Modern Trophy Icon -->
+  <g transform="translate(8, 10)" filter="url(#shadow)">
+    <!-- Trophy body with modern shape -->
+    <path d="M6 6C6 4.89543 6.89543 4 8 4H20C21.1046 4 22 4.89543 22 6V14C22 16.2091 20.2091 18 18 18H10C7.79086 18 6 16.2091 6 14V6Z" 
+          fill="url(#primaryGradient)" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>
+    
+    <!-- Modern handles -->
+    <ellipse cx="4" cy="10" rx="2" ry="3" fill="url(#primaryGradient)" opacity="0.8"/>
+    <ellipse cx="24" cy="10" rx="2" ry="3" fill="url(#primaryGradient)" opacity="0.8"/>
+    
+    <!-- Base -->
+    <rect x="12" y="18" width="4" height="4" rx="1" fill="url(#primaryGradient)"/>
+    <rect x="9" y="22" width="10" height="3" rx="1.5" fill="url(#primaryGradient)"/>
+    
+    <!-- Star -->
+    <path d="M14 8L14.8 9.5L16.5 9.5L15.2 10.5L15.8 12L14 10.8L12.2 12L12.8 10.5L11.5 9.5L13.2 9.5L14 8Z" 
+          fill="#FFFFFF" opacity="0.95"/>
+    
+    <!-- Shine effect -->
+    <ellipse cx="10" cy="8" rx="2" ry="1" fill="#FFFFFF" opacity="0.3"/>
+  </g>
+  
+  <!-- Modern Typography -->
+  <g>
+    <!-- BANKASS -->
+    <text x="45" y="28" font-family="'Segoe UI', Arial, sans-serif" font-size="20" font-weight="700" 
+          fill="url(#secondaryGradient)" letter-spacing="0.5">
+      BANKASS
+    </text>
+    
+    <!-- AWARDS -->
+    <text x="45" y="44" font-family="'Segoe UI', Arial, sans-serif" font-size="12" font-weight="500" 
+          fill="#64748B" letter-spacing="2">
+      AWARDS
+    </text>
+  </g>
+  
+  <!-- Modern accent line -->
+  <rect x="45" y="48" width="60" height="2" rx="1" fill="url(#primaryGradient)" opacity="0.6"/>
+  
+  <!-- Year badge -->
+  <g transform="translate(110, 35)">
+    <rect x="0" y="0" width="30" height="16" rx="8" fill="url(#primaryGradient)" opacity="0.1"/>
+    <text x="15" y="11" font-family="'Segoe UI', Arial, sans-serif" font-size="9" font-weight="600" 
+          fill="url(#primaryGradient)" text-anchor="middle">
+      2025
+    </text>
+  </g>
+  
+  <!-- Subtle glow effect -->
+  <circle cx="14" cy="20" r="25" fill="url(#primaryGradient)" opacity="0.05"/>
+</svg>

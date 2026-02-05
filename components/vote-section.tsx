@@ -1,10 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Check, Vote as VoteIcon, AlertCircle, Trophy, Sparkles, ChevronDown, X, Lock, Crown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AudioPreview } from "@/components/audio-preview"
+import { VotingBlockedAlert } from "@/components/voting-blocked-alert"
+import { VotingBlockedHeaderAlert } from "@/components/platform-alert"
 import type { User, Vote } from "@/hooks/use-api-data"
 import type { Category, Candidate } from "@/lib/categories"
 import { useVotes } from "@/hooks/use-api-data"
@@ -28,6 +30,8 @@ export function VoteSection({
   const [selectedCandidates, setSelectedCandidates] = useState<Record<string, { id: string; name: string }>>({})
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
+  const [votingBlocked, setVotingBlocked] = useState(false)
+  const [blockMessage, setBlockMessage] = useState("")
   const [selectedProfile, setSelectedProfile] = useState<{ candidate: Candidate; categoryId: string } | null>(null)
 
   if (!currentUser) {
@@ -69,6 +73,12 @@ export function VoteSection({
 
     if (!finalCandidate) {
       alert("Veuillez d'abord sélectionner un candidat")
+      return
+    }
+
+    // Vérifier si les votes sont bloqués
+    if (votingBlocked) {
+      alert("❌ Les votes sont actuellement fermés !\n\nVeuillez réessayer plus tard.")
       return
     }
 
@@ -119,8 +129,39 @@ export function VoteSection({
     }))
   }
 
+  // Vérifier l'état des votes au montage
+  useEffect(() => {
+    const checkVotingStatus = async () => {
+      try {
+        const response = await fetch('/api/voting-config')
+        const data = await response.json()
+        setVotingBlocked(!data.isVotingOpen)
+        setBlockMessage(data.blockMessage || "Les votes sont actuellement fermés.")
+      } catch (error) {
+        console.error('Erreur lors de la vérification du statut des votes:', error)
+      }
+    }
+
+    checkVotingStatus()
+    // Vérifier toutes les 30 secondes
+    const interval = setInterval(checkVotingStatus, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
   return (
     <section className="py-12 px-4">
+      {/* Alerte de plateforme pour votes bloqués */}
+      {votingBlocked && <VotingBlockedHeaderAlert />}
+      
+      {/* Alerte de votes bloqués (flottante) */}
+      {votingBlocked && (
+        <VotingBlockedAlert 
+          blockMessage={blockMessage}
+          onRetry={() => window.location.reload()}
+          showRetry={true}
+        />
+      )}
+
       <div className="max-w-6xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
           <h1 className="text-3xl sm:text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">

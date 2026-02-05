@@ -40,7 +40,10 @@ export function UserProfileModal({ user, votes, categories, onClose }: UserProfi
   const formatDate = (dateString: string | number) => {
     if (!dateString) return "Non spécifiée"
     try {
-      const date = typeof dateString === 'number' ? new Date(dateString * 1000) : new Date(dateString)
+      // Vérifier si le timestamp est en secondes (Unix) ou en millisecondes
+      const date = typeof dateString === 'number' 
+        ? (dateString > 1000000000000 ? new Date(dateString) : new Date(dateString * 1000))
+        : new Date(dateString)
       return date.toLocaleDateString('fr-FR', {
         day: 'numeric',
         month: 'long',
@@ -50,6 +53,38 @@ export function UserProfileModal({ user, votes, categories, onClose }: UserProfi
       })
     } catch {
       return "Date invalide"
+    }
+  }
+
+  // Calculer l'ancienneté
+  const calculateSeniority = (createdAt: string) => {
+    if (!createdAt) return "Non spécifiée"
+    try {
+      const created = new Date(createdAt)
+      const now = new Date()
+      const diffTime = Math.abs(now.getTime() - created.getTime())
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      
+      if (diffDays === 0) return "Aujourd'hui"
+      if (diffDays === 1) return "Hier"
+      if (diffDays < 7) return `${diffDays} jours`
+      if (diffDays < 30) return `${Math.floor(diffDays / 7)} semaine${Math.floor(diffDays / 7) > 1 ? 's' : ''}`
+      if (diffDays < 365) return `${Math.floor(diffDays / 30)} mois`
+      return `${Math.floor(diffDays / 365)} an${Math.floor(diffDays / 365) > 1 ? 's' : ''}`
+    } catch {
+      return "Date invalide"
+    }
+  }
+
+  // Détecter les comptes multiples (même email/phone)
+  const detectMultipleAccounts = (currentUser: User, allUsers: User[]) => {
+    const sameEmail = allUsers.filter(u => u.email === currentUser.email && u.id !== currentUser.id)
+    const samePhone = currentUser.phone ? allUsers.filter(u => u.phone === currentUser.phone && u.id !== currentUser.id) : []
+    return {
+      hasMultipleAccounts: sameEmail.length > 0 || samePhone.length > 0,
+      sameEmailCount: sameEmail.length,
+      samePhoneCount: samePhone.length,
+      totalRelatedAccounts: sameEmail.length + samePhone.length
     }
   }
 
@@ -172,6 +207,7 @@ export function UserProfileModal({ user, votes, categories, onClose }: UserProfi
                 <div>
                   <p className="text-sm font-medium">Date d'inscription</p>
                   <p className="text-sm text-muted-foreground">{formatDate(user.createdAt as string)}</p>
+                  <p className="text-xs text-primary">Ancienneté : {calculateSeniority(user.createdAt || '')}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -230,6 +266,69 @@ export function UserProfileModal({ user, votes, categories, onClose }: UserProfi
                           </span>
                         </div>
                       )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Analyse de sécurité */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-orange-500" />
+                Analyse de Sécurité
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                <p className="text-sm font-medium text-orange-800 dark:text-orange-200 mb-2">
+                  ⚠️ Détection de comptes multiples
+                </p>
+                <div className="space-y-1 text-xs text-orange-700 dark:text-orange-300">
+                  <p>
+                    • Basé sur l'analyse des emails et numéros de téléphone identiques
+                  </p>
+                  <p>
+                    • Permet d'identifier les tentatives de vote multiple
+                  </p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <p className="text-sm font-medium mb-1">Statut du compte</p>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${user.role === 'SUPER_ADMIN' ? 'bg-amber-500' : 'bg-green-500'}`}></div>
+                      <span className="text-xs text-muted-foreground">
+                        {user.role === 'SUPER_ADMIN' ? 'Administrateur' : 'Utilisateur standard'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${hasVoted ? 'bg-blue-500' : 'bg-gray-400'}`}></div>
+                      <span className="text-xs text-muted-foreground">
+                        {hasVoted ? 'A voté' : 'N\'a pas voté'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <p className="text-sm font-medium mb-1">Métriques d'activité</p>
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-xs text-muted-foreground">Total votes</span>
+                      <span className="text-xs font-medium">{userVotes.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-xs text-muted-foreground">Catégories</span>
+                      <span className="text-xs font-medium">{votedCategories.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-xs text-muted-foreground">Ancienneté</span>
+                      <span className="text-xs font-medium">{calculateSeniority(user.createdAt || '')}</span>
                     </div>
                   </div>
                 </div>

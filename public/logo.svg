@@ -1,0 +1,53 @@
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF6B35;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#F7931E;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFC107;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1F2937;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#374151;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Trophy Icon -->
+  <g transform="translate(10, 8)">
+    <!-- Trophy Cup -->
+    <path d="M8 8C8 6.89543 8.89543 6 10 6H18C19.1046 6 20 6.89543 20 8V12C20 13.1046 19.1046 14 18 14H10C8.89543 14 8 13.1046 8 12V8Z" 
+          fill="url(#logoGradient)" stroke="#FF6B35" stroke-width="0.5"/>
+    
+    <!-- Trophy Handles -->
+    <path d="M6 8C4.89543 8 4 8.89543 4 10C4 11.1046 4.89543 12 6 12C6.55228 12 7 11.5523 7 11V9C7 8.44772 6.55228 8 6 8Z" 
+          fill="url(#logoGradient)" stroke="#FF6B35" stroke-width="0.5"/>
+    <path d="M22 8C23.1046 8 24 8.89543 24 10C24 11.1046 23.1046 12 22 12C21.4477 12 21 11.5523 21 11V9C21 8.44772 21.4477 8 22 8Z" 
+          fill="url(#logoGradient)" stroke="#FF6B35" stroke-width="0.5"/>
+    
+    <!-- Trophy Base -->
+    <rect x="12" y="14" width="4" height="3" fill="url(#logoGradient)"/>
+    <rect x="10" y="17" width="8" height="2" rx="1" fill="url(#logoGradient)"/>
+    
+    <!-- Star on Trophy -->
+    <path d="M14 9L14.5 10L15.5 10L14.7 10.7L15 11.5L14 10.8L13 11.5L13.3 10.7L12.5 10L13.5 10L14 9Z" 
+          fill="#FFFFFF" opacity="0.9"/>
+  </g>
+  
+  <!-- Text: BANKASS -->
+  <text x="45" y="25" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="url(#textGradient)">
+    BANKASS
+  </text>
+  
+  <!-- Text: AWARDS -->
+  <text x="45" y="42" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#6B7280">
+    AWARDS
+  </text>
+  
+  <!-- Decorative line -->
+  <line x1="45" y1="46" x2="120" y2="46" stroke="url(#logoGradient)" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Year indicator -->
+  <text x="125" y="42" font-family="Arial, sans-serif" font-size="10" font-weight="500" fill="#9CA3AF">
+    2025
+  </text>
+</svg>

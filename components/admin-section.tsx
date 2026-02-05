@@ -31,6 +31,7 @@ import { ImageUpload } from "@/components/image-upload"
 import { CandidateDetailModal } from "@/components/candidate-detail-modal"
 import { CandidateEditor } from "@/components/candidate-editor"
 import { UserProfileModal } from "@/components/user-profile-modal"
+import { VotingControl } from "@/components/voting-control"
 import type { User, Vote } from "@/hooks/use-api-data"
 import type { Category, Candidate } from "@/lib/categories"
 import { useUsers, useCategories, useCandidates } from "@/hooks/use-api-data"
@@ -42,7 +43,7 @@ interface AdminSectionProps {
   currentUser: User | null
 }
 
-type AdminTab = "overview" | "users" | "candidates" | "leadership" | "settings"
+type AdminTab = "overview" | "users" | "candidates" | "voting" | "leadership" | "settings"
 
 export function AdminSection({
   votes,
@@ -81,6 +82,7 @@ export function AdminSection({
     { id: "overview" as AdminTab, label: "Aperçu", icon: BarChart3 },
     { id: "users" as AdminTab, label: "Utilisateurs", icon: Users },
     { id: "candidates" as AdminTab, label: "Candidats", icon: Trophy },
+    { id: "voting" as AdminTab, label: "Votes", icon: Lock },
     { id: "leadership" as AdminTab, label: "Prix Leadership", icon: Crown },
     { id: "settings" as AdminTab, label: "Paramètres", icon: Settings },
   ]
@@ -723,6 +725,19 @@ export function AdminSection({
                   </div>
                 </div>
               )}
+            </motion.div>
+          )}
+
+          {/* Voting Tab */}
+          {activeTab === "voting" && (
+            <motion.div
+              key="voting"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
+            >
+              <VotingControl />
             </motion.div>
           )}
 

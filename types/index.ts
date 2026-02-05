@@ -7,6 +7,7 @@ export interface User {
   domain: string
   city: string
   createdAt: string
+  profilePhoto?: string
 }
 
 export interface Vote {

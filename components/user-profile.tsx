@@ -2,24 +2,25 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { User, Mail, MapPin, Phone, Calendar, Shield, Edit2, Save, X, Eye, EyeOff, CheckCircle } from "lucide-react"
+import { User as UserIcon, Mail, MapPin, Phone, Calendar, Shield, Edit2, Save, X, Eye, EyeOff, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ProfilePhotoUpload } from "@/components/profile-photo-upload"
 import { useVotes } from "@/hooks/use-api-data"
-import type { User as UserType } from "@/hooks/use-api-data"
+import type { User } from "@/hooks/use-api-data"
 
 interface UserProfileProps {
-  user: UserType
+  user: User
   onClose: () => void
-  onUpdate?: (user: UserType) => void
+  onUpdate?: (user: User) => void
 }
 
 export function UserProfile({ user, onClose, onUpdate }: UserProfileProps) {
   const { votes } = useVotes()
   const [isEditing, setIsEditing] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [editedUser, setEditedUser] = useState<UserType>(user)
+  const [editedUser, setEditedUser] = useState<User>(user)
   const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -53,6 +54,28 @@ export function UserProfile({ user, onClose, onUpdate }: UserProfileProps) {
   const membershipDuration = Math.floor((Date.now() - new Date(user.createdAt || Date.now()).getTime()) / (1000 * 60 * 60 * 24))
 
   const handleSave = async () => {
+    if (!onUpdate) {
+      setMessage({ type: "error", text: "Fonction de mise à jour non disponible" })
+      setTimeout(() => setMessage(null), 3000)
+      return
+    }
+
+    try {
+      // Simuler la mise à jour (remplacer par votre vraie logique d'API)
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      onUpdate(editedUser)
+      setIsEditing(false)
+      setMessage({ type: "success", text: "Profil mis à jour avec succès" })
+      setTimeout(() => setMessage(null), 3000)
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error)
+      setMessage({ type: "error", text: "Erreur lors de la mise à jour du profil" })
+      setTimeout(() => setMessage(null), 3000)
+    }
+  }
+
+  const handlePasswordChange = async () => {
     try {
       setMessage(null)
       
@@ -158,9 +181,18 @@ export function UserProfile({ user, onClose, onUpdate }: UserProfileProps) {
           </Button>
           
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center">
-              <User className="w-8 h-8 text-primary-foreground" />
-            </div>
+            <ProfilePhotoUpload
+              currentPhoto={(editedUser as any).profilePhoto}
+              userId={editedUser.id}
+              onPhotoUpdate={(photoUrl) => {
+                setEditedUser(prev => ({ ...prev, profilePhoto: photoUrl }))
+                if (onUpdate) {
+                  onUpdate({ ...editedUser, profilePhoto: photoUrl } as any)
+                }
+              }}
+              size="md"
+              showUploadButton={isEditing}
+            />
             <div className="flex-1">
               <h2 className="text-2xl font-bold">Profil Utilisateur</h2>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -200,7 +232,7 @@ export function UserProfile({ user, onClose, onUpdate }: UserProfileProps) {
             {/* Informations Personnelles */}
             <div className="space-y-4">
               <h3 className="font-semibold text-lg flex items-center gap-2">
-                <User className="w-5 h-5" />
+                <UserIcon className="w-5 h-5" />
                 Informations Personnelles
               </h3>
               
@@ -369,7 +401,7 @@ export function UserProfile({ user, onClose, onUpdate }: UserProfileProps) {
               
               <div className="bg-muted/30 rounded-lg p-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                  <User className="w-4 h-4" />
+                  <UserIcon className="w-4 h-4" />
                   Ancienneté
                 </div>
                 <p className="text-sm font-medium">{membershipDuration} jours</p>

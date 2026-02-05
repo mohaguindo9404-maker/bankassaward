@@ -10,6 +10,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'ID utilisateur et ID candidat requis' }, { status: 400 })
     }
 
+    // Vérifier si les votes sont ouverts
+    const { data: votingConfig, error: configError } = await supabaseAdmin
+      .from('voting_config')
+      .select('is_voting_open, block_message')
+      .single()
+    
+    if (configError) {
+      console.error('Erreur lors de la vérification de la config:', configError)
+      return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    }
+    
+    if (!votingConfig?.is_voting_open) {
+      return NextResponse.json({ 
+        error: votingConfig?.block_message || 'Les votes sont actuellement fermés',
+        votingClosed: true
+      }, { status: 403 })
+    }
+
     // Obtenir l'IP de l'utilisateur
     const ip = request.headers.get('x-forwarded-for') || 
                request.headers.get('x-real-ip') || 

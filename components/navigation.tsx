@@ -1,11 +1,13 @@
 "use client"
 
 import { motion, AnimatePresence } from "framer-motion"
-import { Trophy, Sun, Moon, Menu, X, User, LogOut, Vote, BarChart3, Home, Shield } from "lucide-react"
+import { Trophy, Sun, Moon, Menu, X, User as UserIcon, LogOut, Vote, BarChart3, Home, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import type { Page } from "@/app/page"
 import type { User as UserType } from "@/hooks/use-api-data"
+import { NotificationPanel } from "@/components/notification-panel"
+import { ProfilePhotoUpload } from "@/components/profile-photo-upload"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,16 +68,12 @@ export function Navigation({
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className="relative">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/25 group-hover:shadow-primary/40 transition-shadow">
-                <Trophy className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <motion.div
-                className="absolute -inset-1 rounded-xl bg-gradient-to-br from-primary to-accent opacity-0 group-hover:opacity-20 blur-lg transition-opacity"
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
-              />
-            </div>
+            {/* Logo SVG professionnel */}
+            <img 
+              src="/logo-modern.svg" 
+              alt="Bankass Awards" 
+              className="h-10 w-auto"
+            />
             <div className="hidden sm:block">
               <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 BANKASS AWARDS
@@ -118,6 +116,11 @@ export function Navigation({
 
           {/* Right side */}
           <div className="flex items-center gap-2">
+            {/* Notifications - seulement pour les utilisateurs connectés */}
+            {currentUser && (
+              <NotificationPanel userId={currentUser.id} />
+            )}
+            
             {/* Theme Toggle */}
             <motion.button
               onClick={toggleTheme}
@@ -152,17 +155,25 @@ export function Navigation({
             {currentUser ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <motion.button
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shadow-lg ${
-                      isSuperAdmin
-                        ? "bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-amber-500/25"
-                        : "bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-primary/25"
-                    }`}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    {isSuperAdmin ? <Shield className="w-5 h-5" /> : getInitials(currentUser.name)}
-                  </motion.button>
+                  <div className="relative">
+                    <ProfilePhotoUpload
+                      currentPhoto={(currentUser as any).profilePhoto}
+                      userId={currentUser.id}
+                      onPhotoUpdate={(photoUrl) => {
+                        // Mettre à jour la photo de profil de l'utilisateur
+                        (currentUser as any).profilePhoto = photoUrl
+                      }}
+                      size="sm"
+                      showUploadButton={false}
+                    />
+                    
+                    {/* Badge admin */}
+                    {isSuperAdmin && (
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center">
+                        <Shield className="w-2.5 h-2.5 text-white" />
+                      </div>
+                    )}
+                  </div>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-3 py-2">
@@ -175,7 +186,7 @@ export function Navigation({
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => setCurrentPage("profile")}>
-                    <User className="w-4 h-4 mr-2" />
+                    <UserIcon className="w-4 h-4 mr-2" />
                     Mon Profil
                   </DropdownMenuItem>
                   {isSuperAdmin && (
