@@ -1,0 +1,3 @@
+Trigger Vercel deployment - 2026-02-06 19:45
+Fix applied: Prix Leadership winner name display
+Last commit: a286c26
