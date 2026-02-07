@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
-  const { pathname } = new URL(request.url)
-
+export default function proxy(request: NextRequest) {
   // Vérifier si l'utilisateur a une session de vérification en cours
   const pendingSessionId = request.cookies.get('pending_verification_session')?.value
+  const pathname = request.nextUrl.pathname
 
   if (pendingSessionId && pathname === '/') {
     // Rediriger vers la page de vérification
@@ -32,6 +31,7 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * Feel free to modify this array to match your needs
      */
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],

@@ -86,7 +86,7 @@ export function VoteSection({
 
     // Vérifier si les votes sont bloqués
     if (votingBlocked) {
-      alert("❌ Les votes sont actuellement fermés !\n\nVeuillez réessayer plus tard.")
+      alert(`❌ ${blockMessage || "Les votes sont actuellement fermés !"}\n\nVeuillez réessayer plus tard.`)
       return
     }
 
@@ -137,19 +137,21 @@ export function VoteSection({
     }))
   }
 
-  // Utiliser le statut persistant des votes
+  // Utiliser le statut persistant des votes - VERSION SIMPLIFIÉE
   useEffect(() => {
     if (votingStatus) {
       const isBlocked = !votingStatus.isVotingOpen
-      setVotingBlocked(isBlocked)
-      setBlockMessage(votingStatus.blockMessage || "")
+      const message = votingStatus.blockMessage || ""
       
-      // Afficher l'alerte de site si les votes sont bloqués
+      setVotingBlocked(isBlocked)
+      setBlockMessage(message)
+      
+      // Afficher l'alerte uniquement lors du changement de bloqué -> débloqué
       if (isBlocked && onShowVoteBlockedAlert) {
-        onShowVoteBlockedAlert(votingStatus.blockMessage)
+        onShowVoteBlockedAlert(message)
       }
     }
-  }, [votingStatus, onShowVoteBlockedAlert])
+  }, [votingStatus?.isVotingOpen, votingStatus?.blockMessage])
 
   return (
     <section className="py-12 px-4">

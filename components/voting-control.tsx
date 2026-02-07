@@ -35,11 +35,12 @@ export function VotingControl({ onConfigChange }: VotingControlProps) {
   const [config, setConfig] = useState<VotingConfig>({
     currentEvent: null,
     isVotingOpen: false,
-    blockMessage: "Les votes sont actuellement fermés. Ils seront ouverts le jour de l'événement."
+    blockMessage: "" // Message vide, sera récupéré depuis l'API
   })
   const [loading, setLoading] = useState(false)
   const [notificationMessage, setNotificationMessage] = useState("")
   const [sendingNotifications, setSendingNotifications] = useState(false)
+  const [configLoading, setConfigLoading] = useState(false)
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalVotes: 0,
@@ -53,7 +54,7 @@ export function VotingControl({ onConfigChange }: VotingControlProps) {
   useEffect(() => {
     fetchVotingConfig()
     fetchStats()
-  }, [])
+  }, []) // Exécuter une seule fois au montage
 
   const fetchStats = async () => {
     setStatsLoading(true)
@@ -69,12 +70,17 @@ export function VotingControl({ onConfigChange }: VotingControlProps) {
   }
 
   const fetchVotingConfig = async () => {
+    if (configLoading) return // Éviter les appels multiples
+    
+    setConfigLoading(true)
     try {
       const response = await fetch('/api/voting-config')
       const data = await response.json()
       setConfig(data)
     } catch (error) {
       console.error('Erreur lors du chargement de la config:', error)
+    } finally {
+      setConfigLoading(false)
     }
   }
 

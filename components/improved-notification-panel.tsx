@@ -39,9 +39,13 @@ export function ImprovedNotificationPanel({ userId }: ImprovedNotificationPanelP
       const response = await fetch(`/api/notifications?userId=${userId}`)
       const data = await response.json()
       setNotifications(data)
-      setUnreadCount(data.filter((n) => !n.read).length)
+      // S'assurer que data est un tableau avant de filtrer
+      const notificationsArray = Array.isArray(data) ? data : []
+      setUnreadCount(notificationsArray.filter((n) => !n.read).length)
     } catch (error) {
       console.error('Erreur:', error)
+      setNotifications([]) // Réinitialiser en cas d'erreur
+      setUnreadCount(0)
     }
   }
 

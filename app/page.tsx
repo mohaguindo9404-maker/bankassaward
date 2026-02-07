@@ -151,42 +151,12 @@ export default function BankassAwards() {
     }
   }, [votingStatus])
 
-  // Vérifier le statut des votes périodiquement (toutes les 30 secondes)
+  // Vérifier le statut des votes périodiquement (toutes les 30 secondes) - DÉSACTIVÉ
   useEffect(() => {
-    const checkVotingStatus = async () => {
-      try {
-        const response = await fetch('/api/voting-config')
-        const data = await response.json()
-        
-        const newStatus = {
-          isVotingOpen: data.isVotingOpen,
-          blockMessage: data.blockMessage || "",
-          lastChecked: Date.now()
-        }
-
-        // Ne mettre à jour que si le statut a changé
-        if (JSON.stringify(newStatus) !== JSON.stringify(votingStatus)) {
-          setVotingStatus(newStatus)
-          
-          // Afficher une alerte si les votes viennent d'être bloqués/débloqués
-          if (!newStatus.isVotingOpen && votingStatus.isVotingOpen) {
-            showVoteBlockedAlert(newStatus.blockMessage)
-          } else if (newStatus.isVotingOpen && !votingStatus.isVotingOpen) {
-            showSuccessAlert("Les votes sont maintenant ouverts !")
-          }
-        }
-      } catch (error) {
-        console.error('Erreur vérification statut votes:', error)
-      }
-    }
-
-    // Vérifier immédiatement
-    checkVotingStatus()
-    
-    // Puis vérifier toutes les 30 secondes
-    const interval = setInterval(checkVotingStatus, 30000)
-    return () => clearInterval(interval)
-  }, [votingStatus, showVoteBlockedAlert, showSuccessAlert])
+    // Le polling est désactivé pour éviter la boucle infinie
+    // Le statut sera vérifié manuellement par l'admin
+    return () => {}
+  }, [])
 
   const toggleTheme = () => {
     setTheme(theme === "light" ? "dark" : "light")

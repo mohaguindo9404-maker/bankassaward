@@ -91,11 +91,20 @@ export function SiteAlert({
   }
 
   const positionClasses = position === 'top' 
-    ? 'fixed top-4 left-1/2 transform -translate-x-1/2 z-[9999] w-full max-w-md mx-4'
-    : 'fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[9999] w-full max-w-md mx-4'
+    ? 'fixed left-1/2 transform -translate-x-1/2 z-[9999] w-full max-w-md mx-4'
+    : 'fixed left-1/2 transform -translate-x-1/2 z-[9999] w-full max-w-md mx-4'
+
+  const getDynamicPosition = (index: number) => {
+    const baseOffset = position === 'top' ? 4 : 4
+    const spacing = 120
+    const offset = baseOffset + (index * spacing)
+    return position === 'top' 
+      ? `top-${Math.min(offset, 20)}`
+      : `bottom-${Math.min(offset, 20)}`
+  }
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="popLayout">
       {visibleAlerts.map((alert, index) => (
         <motion.div
           key={alert.id}
@@ -107,7 +116,16 @@ export function SiteAlert({
             delay: index * 0.1,
             ease: "easeInOut"
           }}
-          className={`${positionClasses} ${className}`}
+          style={{
+            position: 'fixed',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            [position === 'top' ? 'top' : 'bottom']: `${4 + (index * 8)}px`,
+            zIndex: 9999 - index,
+            width: 'calc(100% - 2rem)',
+            maxWidth: '28rem'
+          }}
+          className={`${className}`}
         >
           <div className={`rounded-lg border p-4 shadow-lg backdrop-blur-sm ${getStyles(alert.type)}`}>
             <div className="flex items-start gap-3">
@@ -178,6 +196,16 @@ export function useSiteAlerts() {
   const [alerts, setAlerts] = useState<SiteAlert[]>([])
 
   const addAlert = (alert: Omit<SiteAlert, 'id'>) => {
+    // Check if an alert with the same title and message already exists
+    const isDuplicate = alerts.some(existingAlert => 
+      existingAlert.title === alert.title && 
+      existingAlert.message === alert.message
+    )
+    
+    if (isDuplicate) {
+      return null // Don't add duplicate alerts
+    }
+    
     const id = Math.random().toString(36).substr(2, 9)
     setAlerts(prev => [...prev, { ...alert, id }])
     return id
@@ -193,10 +221,11 @@ export function useSiteAlerts() {
 
   // Alertes prédéfinies
   const showVoteBlockedAlert = (message?: string) => {
-    addAlert({
+    const finalMessage = message || 'Les votes sont actuellement fermés. Ils seront ouverts le jour de l\'événement.'
+    return addAlert({
       type: 'warning',
       title: 'Votes temporaires',
-      message: message || 'Les votes ne sont pas encore ouverts. Revenez plus tard.',
+      message: finalMessage,
       action: {
         text: '70359104 (WhatsApp)',
         href: 'https://wa.me/70359104',
