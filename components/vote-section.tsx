@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Trophy, AlertTriangle, CheckCircle, XCircle, Info, Crown, Lock, Check, ChevronDown, Vote as VoteIcon, Sparkles, X, Phone } from "lucide-react"
+import { Trophy, Check, ChevronDown, Vote as VoteIcon, Sparkles, X, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useVotingConfig } from "@/hooks/use-api-data"
 import { VotingBlockedModal } from "@/components/voting-blocked-modal"
+import { CandidateDetailModal } from "@/components/candidate-detail-modal"
 import type { Category, Candidate } from "@/lib/categories"
 import type { User, Vote } from "@/hooks/use-api-data"
 import { useVotes } from "@/hooks/use-api-data"
@@ -39,6 +39,7 @@ export function VoteSection({
   const [blockMessage, setBlockMessage] = useState("")
   const [selectedProfile, setSelectedProfile] = useState<{ candidate: Candidate; categoryId: string } | null>(null)
   const [showBlockedModal, setShowBlockedModal] = useState(false)
+  const [showVoteConfirmation, setShowVoteConfirmation] = useState<{ categoryId: string; candidate: { id: string; name: string } } | null>(null)
 
   if (!currentUser) {
     return (
@@ -82,6 +83,20 @@ export function VoteSection({
       return
     }
 
+    // Vérifier si l'utilisateur est connecté
+    if (!currentUser || !currentUser.id) {
+      alert("❌ Vous devez être connecté pour voter")
+      return
+    }
+
+    // Vérifier si l'ID utilisateur est valide
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(currentUser.id)) {
+      console.error('❌ ID utilisateur invalide:', currentUser.id)
+      alert("❌ Erreur d'authentification. Veuillez vous reconnecter.")
+      return
+    }
+
     // Vérifier si les votes sont bloqués
     if (votingBlocked) {
       setShowBlockedModal(true)
@@ -93,12 +108,21 @@ export function VoteSection({
       return
     }
 
+    // Afficher le modal de confirmation au lieu de voter directement
+    setShowVoteConfirmation({ categoryId, candidate: finalCandidate })
+  }
+
+  const confirmVote = async () => {
+    if (!showVoteConfirmation || !currentUser) return
+
+    const { categoryId, candidate } = showVoteConfirmation
+
     try {
       const voteData = {
         userId: currentUser.id,
         categoryId,
-        candidateId: finalCandidate.id,
-        candidateName: finalCandidate.name,
+        candidateId: candidate.id,
+        candidateName: candidate.name,
       }
 
       const response = await fetch('/api/votes', {
@@ -111,6 +135,7 @@ export function VoteSection({
         // Recharger les votes pour voir le nouveau vote
         await refetchVotes()
         setShowConfirmation(true)
+        setShowVoteConfirmation(null)
         setTimeout(() => {
           setShowConfirmation(false)
           // Rediriger vers les résultats après le vote
@@ -135,19 +160,17 @@ export function VoteSection({
     }))
   }
 
-  // Utiliser le statut persistant des votes - VERSION SIMPLIFIÉE
+  // Utiliser le statut persistant des votes - LOGIQUE CORRECTE
   useEffect(() => {
     if (votingStatus) {
       const isBlocked = !votingStatus.isVotingOpen
       const message = votingStatus.blockMessage || ""
       
-      setVotingBlocked(isBlocked)
-      setBlockMessage(message)
+      // Logique simple : si les votes sont fermés, afficher le modal de blocage
+      const shouldBlock = Boolean(isBlocked)
       
-      // Plus d'alerte double - seul le modal s'affiche
-      // if (isBlocked && onShowVoteBlockedAlert) {
-      //   onShowVoteBlockedAlert(message)
-      // }
+      setVotingBlocked(shouldBlock)
+      setBlockMessage(votingStatus.blockMessage || "")
     }
   }, [votingStatus?.isVotingOpen, votingStatus?.blockMessage])
 
@@ -266,10 +289,13 @@ export function VoteSection({
                                 {/* Candidate Image */}
                                 <div
                                   className="relative aspect-square overflow-hidden"
-                                  onClick={() => setSelectedProfile({ candidate, categoryId: category.id })}
+                                  onClick={() => {
+                                    // Ouvrir le modal de détail du candidat
+                                    setSelectedProfile({ candidate, categoryId: category.id })
+                                  }}
                                 >
                                   <img
-                                    src={candidate.image || "/placeholder.svg"}
+                                    src={candidate.image || "/uploads/candidates/default-avatar.png"}
                                     alt={candidate.name}
                                     className="w-full h-full object-cover transition-transform hover:scale-110"
                                   />
@@ -277,7 +303,7 @@ export function VoteSection({
                                   <div className="absolute bottom-0 left-0 right-0 p-3">
                                     <p className="font-semibold text-white text-sm line-clamp-2">{candidate.name}</p>
                                   </div>
-                                  {/* View profile button */}
+                                  {/* Vote button indicator */}
                                   <div className="absolute top-2 right-2">
                                     <span className="px-2 py-1 rounded-full bg-black/50 text-white text-xs backdrop-blur-sm">
                                       Voir profil
@@ -397,142 +423,14 @@ export function VoteSection({
       {/* Candidate Profile Modal */}
       <AnimatePresence>
         {selectedProfile && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-background/90 backdrop-blur-xl flex items-center justify-center z-50 p-4"
-            onClick={() => setSelectedProfile(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              transition={{ type: "spring", bounce: 0.3 }}
-              className="bg-card border border-border/50 rounded-3xl p-6 sm:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Close button */}
-              <button
-                onClick={() => setSelectedProfile(null)}
-                className="absolute top-4 right-4 p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors z-10"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <div className="flex flex-col sm:flex-row gap-6">
-                {/* Profile Image */}
-                <div className="flex-shrink-0">
-                  <div className="w-40 h-40 sm:w-48 sm:h-48 rounded-2xl overflow-hidden mx-auto sm:mx-0 border-4 border-primary/20">
-                    <img
-                      src={selectedProfile.candidate.image || "/placeholder.svg"}
-                      alt={selectedProfile.candidate.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                </div>
-
-                {/* Profile Info */}
-                <div className="flex-1 text-center sm:text-left">
-                  <h2 className="text-2xl sm:text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                    {selectedProfile.candidate.name}
-                  </h2>
-                  {selectedProfile.candidate.alias && (
-                    <p className="text-primary font-medium mb-2">{selectedProfile.candidate.alias}</p>
-                  )}
-                  <p className="text-muted-foreground leading-relaxed mb-4">{selectedProfile.candidate.bio}</p>
-
-                  {/* Music Info */}
-                  {(selectedProfile.candidate.songCount || selectedProfile.candidate.candidateSong || selectedProfile.candidate.audioFile) && (
-                    <div className="mb-4">
-                      <h3 className="text-sm font-semibold text-primary mb-2 flex items-center gap-2 justify-center sm:justify-start">
-                        <Sparkles className="w-4 h-4" />
-                        Informations Musicales
-                      </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                        {selectedProfile.candidate.songCount && (
-                          <div className="bg-muted/30 rounded-lg p-3">
-                            <p className="text-xs text-muted-foreground">Nombre de chansons</p>
-                            <p className="font-semibold">{selectedProfile.candidate.songCount}</p>
-                          </div>
-                        )}
-                        {selectedProfile.candidate.candidateSong && (
-                          <div className="bg-muted/30 rounded-lg p-3">
-                            <p className="text-xs text-muted-foreground">Chanson candidate</p>
-                            <p className="font-semibold">{selectedProfile.candidate.candidateSong}</p>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Audio Preview */}
-                      {selectedProfile.candidate.audioFile && (
-                        <div className="bg-muted rounded-lg p-3 text-center">
-                          <p className="text-sm font-medium">Audio disponible</p>
-                          <p className="text-xs text-muted-foreground">{selectedProfile.candidate.candidateSong}</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Achievements */}
-                  {selectedProfile.candidate.achievements && selectedProfile.candidate.achievements.length > 0 && (
-                    <div className="mt-4">
-                      <h3 className="text-sm font-semibold text-primary mb-2 flex items-center gap-2 justify-center sm:justify-start">
-                        <Trophy className="w-4 h-4" />
-                        Réalisations notables
-                      </h3>
-                      <ul className="space-y-2">
-                        {selectedProfile.candidate.achievements.map((achievement, idx) => (
-                          <li key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-                            {achievement}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-6 pt-6 border-t border-border/50 space-y-3">
-                {/* Vote Button */}
-                <CandidateDetailModal
-                  candidate={selectedProfile.candidate}
-                  category={categories.find(c => c.id === selectedProfile.categoryId)!}
-                  onClose={() => setSelectedProfile(null)}
-                  votingStatus={votingStatus}
-                />
-                
-                {/* Already Voted Message */}
-                {hasUserVotedInCategory(selectedProfile.categoryId) && (
-                  <div className="w-full p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                    <div className="flex items-center gap-3 text-emerald-500">
-                      <Check className="w-5 h-5" />
-                      <div className="text-center flex-1">
-                        <p className="font-medium text-sm">
-                          {getUserVoteInCategory(selectedProfile.categoryId)?.candidateName === selectedProfile.candidate.name 
-                            ? "✅ Vous avez voté pour ce candidat" 
-                            : "❌ Vote déjà confirmé dans cette catégorie"}
-                        </p>
-                        <p className="text-xs opacity-75 mt-1">
-                          Il est impossible de voter plusieurs fois dans la même catégorie
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Close Button */}
-                <Button
-                  onClick={() => setSelectedProfile(null)}
-                  variant="outline"
-                  className="w-full"
-                >
-                  Fermer
-                </Button>
-              </div>
-            </motion.div>
-          </motion.div>
+          <CandidateDetailModal
+            candidate={selectedProfile.candidate}
+            category={categories.find(c => c.id === selectedProfile.categoryId) || categories[0]}
+            onClose={() => setSelectedProfile(null)}
+            votingStatus={votingStatus}
+            onVote={handleVote}
+            hasUserVotedInCategory={hasUserVotedInCategory}
+          />
         )}
       </AnimatePresence>
       
@@ -541,9 +439,54 @@ export function VoteSection({
         isOpen={showBlockedModal}
         onClose={() => setShowBlockedModal(false)}
         message={blockMessage}
-        contactPhone="70359104 (WhatsApp)"
+        contactPhone="75359104 (WhatsApp)"
         type="blocked"
       />
+
+      {/* Modal de confirmation de vote */}
+      <AnimatePresence>
+        {showVoteConfirmation && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowVoteConfirmation(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", bounce: 0.5 }}
+              className="bg-card border border-border/50 rounded-2xl p-8 text-center max-w-md shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-6">
+                <VoteIcon className="w-10 h-10 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold mb-4">Confirmer votre vote</h3>
+              <p className="text-muted-foreground mb-6">
+                Êtes-vous sûr de vouloir voter pour <strong>{showVoteConfirmation.candidate.name}</strong> ?
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setShowVoteConfirmation(null)}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Annuler
+                </Button>
+                <Button
+                  onClick={confirmVote}
+                  className="flex-1 bg-gradient-to-r from-primary to-accent text-primary-foreground"
+                >
+                  Confirmer
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   )
 }

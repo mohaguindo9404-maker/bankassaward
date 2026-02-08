@@ -5,21 +5,20 @@ import { motion, AnimatePresence } from "framer-motion"
 import { 
   Lock, 
   Unlock, 
-  Calendar, 
   Bell, 
   Settings, 
-  AlertTriangle,
   CheckCircle,
   Clock,
   Users,
   BarChart3
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { useVotingConfig } from "@/hooks/use-api-data"
+import { ConfirmationModal } from "@/components/confirmation-modal"
 
 interface VotingConfig {
   currentEvent: any
@@ -32,10 +31,11 @@ interface VotingControlProps {
 }
 
 export function VotingControl({ onConfigChange }: VotingControlProps) {
+  const { config: hookConfig, refetch } = useVotingConfig()
   const [config, setConfig] = useState<VotingConfig>({
     currentEvent: null,
     isVotingOpen: false,
-    blockMessage: "" // Message vide, sera récupéré depuis l'API
+    blockMessage: "Votes temporairement indisponible. Les votes sont actuellement fermés. Ils seront ouverts très bientôt. Pour plus d'information contactez le 70359104 (WhatsApp)" // Message par défaut
   })
   const [loading, setLoading] = useState(false)
   const [notificationMessage, setNotificationMessage] = useState("")
@@ -49,12 +49,26 @@ export function VotingControl({ onConfigChange }: VotingControlProps) {
     averageTimeMinutes: 0
   })
   const [statsLoading, setStatsLoading] = useState(false)
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false)
+  const [pendingAction, setPendingAction] = useState<() => Promise<void>>(() => Promise.resolve())
+  const [confirmLoading, setConfirmLoading] = useState(false)
 
   // Charger la configuration actuelle
   useEffect(() => {
     fetchVotingConfig()
     fetchStats()
   }, []) // Exécuter une seule fois au montage
+
+  // Synchroniser avec le hook
+  useEffect(() => {
+    if (hookConfig) {
+      setConfig({
+        currentEvent: hookConfig.currentEvent,
+        isVotingOpen: hookConfig.isVotingOpen,
+        blockMessage: hookConfig.blockMessage || "Votes temporairement indisponible. Les votes sont actuellement fermés. Ils seront ouverts très bientôt. Pour plus d'information contactez le 70359104 (WhatsApp)"
+      })
+    }
+  }, [hookConfig])
 
   const fetchStats = async () => {
     setStatsLoading(true)
@@ -99,6 +113,8 @@ export function VotingControl({ onConfigChange }: VotingControlProps) {
         onConfigChange?.(updatedConfig)
         // Recharger les statistiques après changement
         fetchStats()
+        // Rafraîchir le hook pour synchroniser tous les composants
+        await refetch()
       }
     } catch (error) {
       console.error('Erreur lors de la mise à jour:', error)
@@ -143,21 +159,39 @@ export function VotingControl({ onConfigChange }: VotingControlProps) {
       ? "Êtes-vous sûr de vouloir ouvrir les votes ? Tous les utilisateurs pourront voter."
       : "Êtes-vous sûr de vouloir fermer les votes ? Plus aucun vote ne sera accepté."
     
-    if (confirm(confirmMessage)) {
-      updateVotingConfig({ 
-        isVotingOpen: newStatus,
-        blockMessage: newStatus 
-          ? "Les votes sont actuellement ouverts." 
-          : config.blockMessage || "Votes temporairement indisponible. Les votes sont actuellement fermés. Ils seront ouverts très bientôt. Pour plus d'information contactez le 70359104 (WhatsApp)"
-      })
-      
-      // Si on ouvre les votes, envoyer les notifications
-      if (newStatus && notificationMessage.trim()) {
-        setTimeout(() => {
-          sendVotingOpenedNotifications()
-        }, 1000)
+    // Afficher le modal de confirmation au lieu de l'alerte
+    setPendingAction(async () => {
+      setConfirmLoading(true)
+      try {
+        const defaultMessage = "Votes temporairement indisponible. Les votes sont actuellement fermés. Ils seront ouverts très bientôt. Pour plus d'information contactez le 70359104 (WhatsApp)";
+        
+        await updateVotingConfig({ 
+          isVotingOpen: newStatus,
+          blockMessage: newStatus 
+            ? "Les votes sont actuellement ouverts." 
+            : defaultMessage
+        })
+        
+        // Fermer le modal après l'action
+        setShowConfirmationModal(false)
+        
+        // Forcer la synchronisation depuis l'API
+        setTimeout(async () => {
+          await refetch()
+        }, 500)
+        
+        // Si on ouvre les votes, envoyer les notifications
+        if (newStatus && notificationMessage.trim()) {
+          setTimeout(() => {
+            sendVotingOpenedNotifications()
+          }, 1000)
+        }
+      } finally {
+        setConfirmLoading(false)
       }
-    }
+    })
+    
+    setShowConfirmationModal(true)
   }
 
   return (
@@ -360,6 +394,22 @@ export function VotingControl({ onConfigChange }: VotingControlProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal de confirmation */}
+      <ConfirmationModal
+        isOpen={showConfirmationModal}
+        onClose={() => setShowConfirmationModal(false)}
+        onConfirm={pendingAction}
+        title={config.isVotingOpen ? "Fermer les votes" : "Ouvrir les votes"}
+        message={config.isVotingOpen 
+          ? "Êtes-vous sûr de vouloir fermer les votes ? Plus aucun vote ne sera accepté."
+          : "Êtes-vous sûr de vouloir ouvrir les votes ? Tous les utilisateurs pourront voter."
+        }
+        confirmText={config.isVotingOpen ? "Fermer" : "Ouvrir"}
+        cancelText="Annuler"
+        type="warning"
+        loading={confirmLoading}
+      />
     </div>
   )
 }

@@ -116,7 +116,7 @@ export function ResultsSection({
                             <div className="flex items-center gap-3">
                               {result.image && (
                                 <img
-                                  src={result.image || "/placeholder.svg"}
+                                  src={result.image || "/uploads/candidates/default-avatar.png"}
                                   alt={result.name}
                                   className="w-8 h-8 rounded-full object-cover border-2 border-border"
                                 />

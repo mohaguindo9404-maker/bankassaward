@@ -226,7 +226,7 @@ export function ImageUpload({ currentImage, onImageChange, label = "Image" }: Im
           className="relative inline-block"
         >
           <img
-            src={preview || "/placeholder.svg"}
+            src={preview || "/uploads/candidates/default-avatar.png"}
             alt="Aperçu"
             className="w-24 h-24 rounded-xl object-cover border border-border"
             onError={() => setError("Impossible de charger l'image")}

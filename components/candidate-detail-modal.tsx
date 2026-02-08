@@ -1,9 +1,8 @@
 "use client"
 
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Music, User, Award, Star, Lock, Phone } from "lucide-react"
+import { X, Music, User, Award, Star, Vote as VoteIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AudioPreview } from "@/components/audio-preview"
 import type { Candidate, Category } from "@/lib/categories"
 
@@ -15,9 +14,23 @@ interface CandidateDetailModalProps {
     isVotingOpen: boolean
     blockMessage?: string
   }
+  onVote?: (categoryId: string, candidate: { id: string; name: string }) => void
+  hasUserVotedInCategory?: (categoryId: string) => boolean
 }
 
-export function CandidateDetailModal({ candidate, category, onClose, votingStatus }: CandidateDetailModalProps) {
+export function CandidateDetailModal({ 
+  candidate, 
+  category, 
+  onClose, 
+  votingStatus,
+  onVote,
+  hasUserVotedInCategory
+}: CandidateDetailModalProps) {
+  
+  // Vérifier si les votes sont fermés - COMMENTÉ POUR PERMETTRE LE VOTE
+  // const areVotesClosed = votingStatus ? !votingStatus.isVotingOpen : false;
+  // const shouldShowBlockMessage = Boolean(areVotesClosed);
+
   return (
     <AnimatePresence>
       <motion.div
@@ -37,7 +50,7 @@ export function CandidateDetailModal({ candidate, category, onClose, votingStatu
           {/* Header with image */}
           <div className="relative h-48 bg-gradient-to-br from-primary/20 to-accent/20">
             <img
-              src={candidate.image || "/placeholder.svg"}
+              src={candidate.image || "/uploads/candidates/default-avatar.png"}
               alt={candidate.name}
               className="w-full h-full object-cover"
             />
@@ -56,7 +69,7 @@ export function CandidateDetailModal({ candidate, category, onClose, votingStatu
           <div className="p-6 -mt-16 relative">
             <div className="flex items-end gap-4 mb-6">
               <img
-                src={candidate.image || "/placeholder.svg"}
+                src={candidate.image || "/uploads/candidates/default-avatar.png"}
                 alt={candidate.name}
                 className="w-24 h-24 rounded-2xl border-4 border-background object-cover shadow-xl"
               />
@@ -81,7 +94,7 @@ export function CandidateDetailModal({ candidate, category, onClose, votingStatu
               <p className="text-muted-foreground leading-relaxed">{candidate.bio}</p>
             </div>
 
-            {/* Music Info */}
+            {/* Music Info - N'afficher que s'il y a des infos */}
             {(candidate.songCount || candidate.candidateSong || candidate.audioFile) && (
               <div className="mb-6">
                 <h3 className="font-semibold mb-4 flex items-center gap-2">
@@ -144,51 +157,7 @@ export function CandidateDetailModal({ candidate, category, onClose, votingStatu
               </div>
             )}
 
-            {/* Vote Button */}
-            <div className="mt-6 pt-6 border-t border-border/50">
-              {votingStatus && !votingStatus.isVotingOpen ? (
-                // Votes fermés - Afficher le message de blocage
-                <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-3 text-red-600">
-                      <Lock className="w-5 h-5" />
-                      Votes Bloqués
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-muted-foreground leading-relaxed">
-                      {votingStatus.blockMessage || "Les votes sont actuellement fermés."}
-                    </p>
-                    <div className="bg-muted/50 rounded-lg p-4 border border-border/50">
-                      <div className="flex items-center gap-3 mb-2">
-                        <Phone className="w-5 h-5 text-primary" />
-                        <span className="font-medium">Contact Support</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Pour plus d'informations ou assistance, veuillez contacter :
-                      </p>
-                      <div className="bg-background rounded-md p-3 border border-border/50">
-                        <p className="font-mono text-center text-primary font-semibold">
-                          70359104 (WhatsApp)
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                // Votes ouverts - Afficher le bouton de vote normal
-                <Button
-                  onClick={() => {
-                    // Cette fonction sera passée depuis le parent
-                    console.log('Vote demandé pour:', candidate.name)
-                  }}
-                  className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground"
-                  size="lg"
-                >
-                  Voter pour {candidate.name}
-                </Button>
-              )}
-            </div>
+            {/* Achievements - N'afficher que s'il y a des réalisations */}
             {candidate.achievements && candidate.achievements.length > 0 && (
               <div>
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
@@ -210,6 +179,19 @@ export function CandidateDetailModal({ candidate, category, onClose, votingStatu
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Vote Section */}
+          <div className="mt-6 pt-6 border-t border-border/50">
+            <Button
+              onClick={() => onVote?.(category.id, { id: candidate.id, name: candidate.name })}
+              className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground"
+              size="lg"
+              disabled={hasUserVotedInCategory?.(category.id)}
+            >
+              <VoteIcon className="w-4 h-4 mr-2" />
+              {hasUserVotedInCategory?.(category.id) ? "Déjà voté" : `Voter pour ${candidate.name}`}
+            </Button>
           </div>
         </motion.div>
       </motion.div>

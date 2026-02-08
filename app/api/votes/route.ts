@@ -30,9 +30,31 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { userId, categoryId, candidateId, candidateName } = body
 
+    // Debug: afficher les données reçues
+    console.log('🔍 DEBUG POST /api/votes - Données reçues:', {
+      userId,
+      categoryId,
+      candidateId,
+      candidateName,
+      types: {
+        userId: typeof userId,
+        categoryId: typeof categoryId,
+        candidateId: typeof candidateId,
+        candidateName: typeof candidateName
+      }
+    })
+
     // Validation
     if (!userId || !categoryId || !candidateId) {
+      console.log('❌ Validation échouée - champs manquants')
       return NextResponse.json({ error: 'Tous les champs sont requis' }, { status: 400 })
+    }
+
+    // Validation du format UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(userId)) {
+      console.log('❌ UUID invalide pour userId:', userId)
+      return NextResponse.json({ error: 'ID utilisateur invalide' }, { status: 400 })
     }
 
     // Vérifier si l'utilisateur a déjà voté dans cette catégorie

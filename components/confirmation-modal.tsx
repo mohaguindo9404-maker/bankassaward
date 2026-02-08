@@ -1,26 +1,38 @@
 "use client"
 
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Lock, Phone, AlertTriangle, Info } from "lucide-react"
+import { X, AlertTriangle, CheckCircle, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-interface VotingBlockedModalProps {
+interface ConfirmationModalProps {
   isOpen: boolean
   onClose: () => void
-  message?: string
-  contactPhone?: string
-  type?: "blocked" | "warning" | "info"
+  onConfirm: () => void | Promise<void>
+  title: string
+  message: string
+  confirmText?: string
+  cancelText?: string
+  type?: "warning" | "info" | "success"
+  loading?: boolean
 }
 
-export function VotingBlockedModal({ 
+export function ConfirmationModal({ 
   isOpen, 
   onClose, 
-  message = "Les votes sont actuellement bloqués.", 
-  contactPhone = "+223 XX XX XX XX",
-  type = "blocked"
-}: VotingBlockedModalProps) {
+  onConfirm, 
+  title, 
+  message, 
+  confirmText = "Confirmer",
+  cancelText = "Annuler",
+  type = "warning",
+  loading = false
+}: ConfirmationModalProps) {
   if (!isOpen) return null
+
+  const handleConfirm = async () => {
+    await onConfirm()
+  }
 
   const getIcon = () => {
     switch (type) {
@@ -28,8 +40,10 @@ export function VotingBlockedModal({
         return <AlertTriangle className="w-8 h-8 text-amber-500" />
       case "info":
         return <Info className="w-8 h-8 text-blue-500" />
+      case "success":
+        return <CheckCircle className="w-8 h-8 text-green-500" />
       default:
-        return <Lock className="w-8 h-8 text-red-500" />
+        return <AlertTriangle className="w-8 h-8 text-amber-500" />
     }
   }
 
@@ -39,19 +53,23 @@ export function VotingBlockedModal({
         return "border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20"
       case "info":
         return "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20"
+      case "success":
+        return "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20"
       default:
-        return "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20"
+        return "border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20"
     }
   }
 
-  const getTitle = () => {
+  const getConfirmButtonVariant = (): "default" | "outline" | "destructive" | "secondary" | "ghost" | "link" => {
     switch (type) {
       case "warning":
-        return "Attention"
+        return "destructive"
       case "info":
-        return "Information"
+        return "default"
+      case "success":
+        return "default"
       default:
-        return "Votes Bloqués"
+        return "destructive"
     }
   }
 
@@ -85,7 +103,7 @@ export function VotingBlockedModal({
                       {getIcon()}
                     </div>
                     <CardTitle className="text-lg">
-                      {getTitle()}
+                      {title}
                     </CardTitle>
                   </div>
                   <Button
@@ -99,51 +117,34 @@ export function VotingBlockedModal({
                 </div>
               </CardHeader>
               
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
                 <div className="space-y-3">
                   <p className="text-muted-foreground leading-relaxed">
                     {message}
                   </p>
-                  
-                  {type === "blocked" && (
-                    <div className="bg-muted/50 rounded-lg p-4 border border-border/50">
-                      <div className="flex items-center gap-3 mb-2">
-                        <Phone className="w-5 h-5 text-primary" />
-                        <span className="font-medium">Contact Support</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Pour plus d'informations ou assistance, veuillez contacter :
-                      </p>
-                      <div className="bg-background rounded-md p-3 border border-border/50">
-                        <p className="font-mono text-center text-primary font-semibold">
-                          {contactPhone}
-                        </p>
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 <div className="flex gap-3 pt-2">
                   <Button
                     onClick={onClose}
+                    variant="outline"
                     className="flex-1"
-                    variant={type === "blocked" ? "outline" : "default"}
                   >
-                    {type === "blocked" ? "J'ai compris" : "OK"}
+                    {cancelText}
                   </Button>
                   
-                  {type === "blocked" && (
-                    <Button
-                      onClick={() => {
-                        // Ouvrir WhatsApp
-                        const phoneNumber = contactPhone.replace(/\D/g, '');
-                        window.open(`https://wa.me/${phoneNumber}`, '_blank');
-                      }}
-                      className="flex-1"
-                    >
-                      Contacter
-                    </Button>
-                  )}
+                  <Button
+                    onClick={handleConfirm}
+                    className="flex-1"
+                    variant={getConfirmButtonVariant()}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      confirmText
+                    )}
+                  </Button>
                 </div>
               </CardContent>
             </Card>

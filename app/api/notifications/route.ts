@@ -10,6 +10,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'ID utilisateur requis' }, { status: 400 })
     }
 
+    // Validation du format UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(userId)) {
+      console.log('❌ UUID invalide pour userId:', userId)
+      return NextResponse.json({ error: 'ID utilisateur invalide' }, { status: 400 })
+    }
+
     // Récupérer les notifications de l'utilisateur
     const { data: notifications, error } = await supabaseAdmin
       .from('notifications')

@@ -25,9 +25,8 @@ try {
       'Fix redirection auth',
       'Persistance données',
       'API votes corrigée', 
-      'Prix Leadership - affichage nom gagnant',
       'Suspense boundaries',
-      'CSS side-icon.css'
+
     ]
   };
   

@@ -2,10 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 
 // GET - Récupérer tous les candidats
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const categoryId = searchParams.get('categoryId')
+
+    // Validation du format UUID si categoryId est fourni
+    if (categoryId) {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      if (!uuidRegex.test(categoryId)) {
+        console.log('❌ UUID invalide pour categoryId:', categoryId)
+        return NextResponse.json({ error: 'ID catégorie invalide' }, { status: 400 })
+      }
+    }
 
     let query = supabaseAdmin
       .from('candidates')

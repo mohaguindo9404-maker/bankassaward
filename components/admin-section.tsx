@@ -633,7 +633,7 @@ export function AdminSection({
                               <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-3">
                                   <img
-                                    src={candidate.image || "/placeholder.svg"}
+                                    src={candidate.image || "/uploads/candidates/default-avatar.png"}
                                     alt={candidate.name}
                                     className="w-16 h-16 rounded-xl object-cover cursor-pointer hover:ring-2 hover:ring-primary transition-all"
                                     onClick={() => setSelectedCandidate({ categoryId: selectedCategory, candidate })}

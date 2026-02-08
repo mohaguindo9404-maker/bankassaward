@@ -21,12 +21,10 @@ export async function POST(request: NextRequest) {
     // Créer des notifications pour tous les utilisateurs
     const notifications = users?.map(user => ({
       user_id: user.id,
-      type: 'VOTING_OPENED',
       title: '🗳️ Votes ouverts !',
       message: message || 'Les votes sont maintenant ouverts. Vous pouvez maintenant voter pour vos candidats préférés.',
-      data: { eventId },
-      read: false,
-      created_at: new Date().toISOString()
+      read: false
+      // Colonnes supprimées: type, data, created_at (n'existent pas)
     })) || []
     
     if (notifications.length > 0) {

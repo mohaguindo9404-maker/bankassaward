@@ -55,7 +55,9 @@ export async function POST(request: NextRequest) {
         id: '66c822a3-798c-493f-8490-4d13d378231b', // Utiliser l'UUID existant
         current_event: currentEvent,
         is_voting_open: isVotingOpen,
-        block_message: blockMessage,
+        block_message: isVotingOpen 
+          ? "Les votes sont actuellement ouverts." 
+          : blockMessage || "Votes temporairement indisponible. Les votes sont actuellement fermés. Ils seront ouverts très bientôt. Pour plus d'information contactez le 70359104 (WhatsApp)",
         updated_at: new Date().toISOString()
       })
       .select()
@@ -72,8 +74,10 @@ export async function POST(request: NextRequest) {
     const transformedData = data ? {
       currentEvent: data.current_event,
       isVotingOpen: data.is_voting_open,
-      blockMessage: data.block_message,
-      lastChecked: Date.now()
+      blockMessage: data.is_voting_open 
+        ? "Les votes sont actuellement ouverts." 
+        : data.block_message || "Votes temporairement indisponible. Les votes sont actuellement fermés. Ils seront ouverts très bientôt. Pour plus d'information contactez le 70359104 (WhatsApp)",
+      updatedAt: data.updated_at
     } : null
     
     return NextResponse.json(transformedData)
