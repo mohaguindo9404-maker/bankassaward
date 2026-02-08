@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     // Retourner l'URL publique complète
     const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://your-domain.com' 
+      ? 'https://bankassaward.org' 
       : 'http://localhost:3000'
     const publicUrl = `${baseUrl}/uploads/candidates/${fileName}`
     

@@ -6,7 +6,6 @@ import { Trophy, Check, ChevronDown, Vote as VoteIcon, Sparkles, X, Info } from 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useVotingConfig } from "@/hooks/use-api-data"
-import { VotingBlockedModal } from "@/components/voting-blocked-modal"
 import { CandidateDetailModal } from "@/components/candidate-detail-modal"
 import type { Category, Candidate } from "@/lib/categories"
 import type { User, Vote } from "@/hooks/use-api-data"
@@ -97,11 +96,11 @@ export function VoteSection({
       return
     }
 
-    // Vérifier si les votes sont bloqués
-    if (votingBlocked) {
-      setShowBlockedModal(true)
-      return
-    }
+    // Vérifier si les votes sont bloqués - COMMENTÉ POUR PERMETTRE LE VOTE
+    // if (votingBlocked) {
+    //   setShowBlockedModal(true)
+    //   return
+    // }
 
     if (hasUserVotedInCategory(categoryId)) {
       alert("❌ Vote déjà confirmé !\n\nVous avez déjà voté dans cette catégorie. Il est impossible de voter plusieurs fois dans la même catégorie.")
@@ -434,14 +433,14 @@ export function VoteSection({
         )}
       </AnimatePresence>
       
-      {/* Modal de blocage des votes */}
-      <VotingBlockedModal
+      {/* Modal de blocage des votes - COMMENTÉ POUR PERMETTRE LE VOTE */}
+      {/* <VotingBlockedModal
         isOpen={showBlockedModal}
         onClose={() => setShowBlockedModal(false)}
         message={blockMessage}
-        contactPhone="75359104 (WhatsApp)"
+        contactPhone="70359104 (WhatsApp)"
         type="blocked"
-      />
+      /> */}
 
       {/* Modal de confirmation de vote */}
       <AnimatePresence>
