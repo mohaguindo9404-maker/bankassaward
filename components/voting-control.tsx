@@ -148,7 +148,7 @@ export function VotingControl({ onConfigChange }: VotingControlProps) {
         isVotingOpen: newStatus,
         blockMessage: newStatus 
           ? "Les votes sont actuellement ouverts." 
-          : "Les votes sont actuellement fermés. Ils seront rouverts le jour de l'événement."
+          : config.blockMessage || "Votes temporairement indisponible. Les votes sont actuellement fermés. Ils seront ouverts très bientôt. Pour plus d'information contactez le 70359104 (WhatsApp)"
       })
       
       // Si on ouvre les votes, envoyer les notifications

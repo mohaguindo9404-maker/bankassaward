@@ -26,34 +26,54 @@ export function ImageUpload({ currentImage, onImageChange, label = "Image" }: Im
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      setError("Veuillez sélectionner une image valide")
-      return
-    }
+    console.log('📸 Fichier sélectionné:', file.name, file.type, file.size)
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError("L'image ne doit pas dépasser 5MB")
+    // Validation simple
+    if (!file.type.startsWith("image/")) {
+      setError("Veuillez sélectionner une image")
       return
     }
 
     setError(null)
     setIsUploading(true)
 
-    // Convert to base64 for local storage
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string
-      setPreview(base64)
-      onImageChange(base64)
+    try {
+      // Upload direct vers notre API simple
+      const formData = new FormData()
+      formData.append('file', file)
+
+      console.log('📤 Envoi vers /api/simple-upload...')
+
+      const response = await fetch('/api/simple-upload', {
+        method: 'POST',
+        body: formData
+      })
+
+      console.log('📥 Réponse API:', response.status, response.statusText)
+
+      if (!response.ok) {
+        const error = await response.json()
+        console.error('❌ Erreur API:', error)
+        throw new Error(error.error || 'Erreur upload')
+      }
+
+      const result = await response.json()
+      console.log('✅ Résultat upload:', result)
+      
+      if (result.success) {
+        setPreview(result.url)
+        onImageChange(result.url)
+        console.log('🎉 Image appliquée:', result.url)
+      } else {
+        throw new Error(result.error || 'Erreur inconnue')
+      }
+
+    } catch (error) {
+      console.error('❌ Erreur upload:', error)
+      setError(error instanceof Error ? error.message : 'Erreur lors de l\'upload')
+    } finally {
       setIsUploading(false)
     }
-    reader.onerror = () => {
-      setError("Erreur lors de la lecture du fichier")
-      setIsUploading(false)
-    }
-    reader.readAsDataURL(file)
   }
 
   const handleUrlSubmit = () => {
@@ -62,7 +82,7 @@ export function ImageUpload({ currentImage, onImageChange, label = "Image" }: Im
       return
     }
 
-    // Basic URL validation
+    // Validation simple d'URL
     try {
       new URL(urlInput)
     } catch {
@@ -143,12 +163,8 @@ export function ImageUpload({ currentImage, onImageChange, label = "Image" }: Im
 
               {isUploading ? (
                 <div className="flex flex-col items-center gap-2">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                    className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full"
-                  />
-                  <p className="text-sm text-muted-foreground">Chargement...</p>
+                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm text-muted-foreground">Traitement...</p>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2">
@@ -157,7 +173,7 @@ export function ImageUpload({ currentImage, onImageChange, label = "Image" }: Im
                     <p className="font-medium">Glissez une image ici</p>
                     <p className="text-sm text-muted-foreground">ou cliquez pour parcourir</p>
                   </div>
-                  <p className="text-xs text-muted-foreground">PNG, JPG jusqu'à 5MB</p>
+                  <p className="text-xs text-muted-foreground">PNG, JPG, WebP</p>
                 </div>
               )}
             </div>
@@ -176,7 +192,11 @@ export function ImageUpload({ currentImage, onImageChange, label = "Image" }: Im
               placeholder="https://example.com/image.jpg"
               className="flex-1"
             />
-            <Button type="button" onClick={handleUrlSubmit}>
+            <Button 
+              type="button" 
+              onClick={handleUrlSubmit}
+              disabled={!urlInput.trim()}
+            >
               <Check className="w-4 h-4" />
             </Button>
           </motion.div>

@@ -220,21 +220,21 @@ export function useSiteAlerts() {
   }
 
   // Alertes prédéfinies
-  const showVoteBlockedAlert = (message?: string) => {
-    const finalMessage = message || 'Les votes sont actuellement fermés. Ils seront ouverts le jour de l\'événement.'
-    return addAlert({
-      type: 'warning',
-      title: 'Votes temporaires',
-      message: finalMessage,
-      action: {
-        text: '70359104 (WhatsApp)',
-        href: 'https://wa.me/70359104',
-        external: true
-      },
-      duration: null, // Ne ferme pas automatiquement
-      dismissible: true
-    })
-  }
+  // const showVoteBlockedAlert = (message?: string) => {
+  //   const finalMessage = message || 'Les votes sont actuellement fermés. Ils seront ouverts le jour de l\'événement.'
+  //   return addAlert({
+  //     type: 'warning',
+  //     title: 'Votes temporaires',
+  //     message: finalMessage,
+  //     action: {
+  //       text: '70359104 (WhatsApp)',
+  //       href: 'https://wa.me/70359104',
+  //       external: true
+  //     },
+  //     duration: null, // Ne ferme pas automatiquement
+  //     dismissible: true
+  //   })
+  // }
 
   const showSuccessAlert = (message: string) => {
     addAlert({
@@ -268,7 +268,7 @@ export function useSiteAlerts() {
     addAlert,
     removeAlert,
     clearAllAlerts,
-    showVoteBlockedAlert,
+    // showVoteBlockedAlert, // Supprimé pour éviter l'affichage double
     showSuccessAlert,
     showErrorAlert,
     showInfoAlert

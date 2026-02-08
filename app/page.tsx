@@ -59,16 +59,8 @@ export default function BankassAwards() {
   const { users, loading: usersLoading } = useUsers()
   const { categories, loading: categoriesLoading, refetch: refetchCategories } = useCategories()
   const { votes, loading: votesLoading, refetch: refetchVotes } = useVotes()
-  const { alerts, showVoteBlockedAlert, showSuccessAlert, showErrorAlert, showInfoAlert } = useSiteAlerts()
+  const { alerts, showSuccessAlert, showErrorAlert, showInfoAlert } = useSiteAlerts()
   const [theme, setTheme] = useState<"light" | "dark">("dark")
-  const [leadershipRevealed, setLeadershipRevealed] = useState<boolean>(() => {
-    // Récupérer le statut de révélation du leadership depuis localStorage
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem("leadershipRevealed")
-      return saved ? JSON.parse(saved) : false
-    }
-    return false
-  })
   const [isMounted, setIsMounted] = useState(false)
   const [autoRefresh, setAutoRefresh] = useState(true)
   // État pour le statut des votes (persisté côté client)
@@ -85,8 +77,8 @@ export default function BankassAwards() {
       }
     }
     return {
-      isVotingOpen: true,
-      blockMessage: "",
+      isVotingOpen: false, // Bloqué par défaut
+      blockMessage: "Les votes sont actuellement fermés. Ils seront ouverts le jour de l'événement.",
       lastChecked: Date.now()
     }
   })
@@ -136,13 +128,6 @@ export default function BankassAwards() {
       localStorage.setItem("currentPage", currentPage)
     }
   }, [currentPage])
-
-  // Persister le statut de révélation du leadership
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem("leadershipRevealed", JSON.stringify(leadershipRevealed))
-    }
-  }, [leadershipRevealed])
 
   // Persister le statut des votes
   useEffect(() => {
@@ -226,18 +211,14 @@ export default function BankassAwards() {
               currentUser={currentUser}
               setCurrentPage={(page) => setCurrentPage(page as Page)}
               categories={categories}
-              leadershipRevealed={leadershipRevealed}
               votingStatus={votingStatus}
-              onShowVoteBlockedAlert={showVoteBlockedAlert}
             />
           )}
           {currentPage === "results" && (
             <ResultsSection
               votes={votes}
               categories={categories}
-              leadershipRevealed={leadershipRevealed}
               isSuperAdmin={isSuperAdmin}
-              onRevealLeadership={() => setLeadershipRevealed(true)}
             />
           )}
           {currentPage === "profile" && currentUser && (
@@ -250,8 +231,6 @@ export default function BankassAwards() {
           {currentPage === "admin" && isSuperAdmin && (
             <AdminSection
               votes={votes}
-              leadershipRevealed={leadershipRevealed}
-              setLeadershipRevealed={setLeadershipRevealed}
               currentUser={currentUser}
               showSuccessAlert={showSuccessAlert}
               showErrorAlert={showErrorAlert}

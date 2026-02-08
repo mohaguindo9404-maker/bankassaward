@@ -29,7 +29,7 @@ export async function GET() {
     const defaultConfig = {
       currentEvent: null,
       isVotingOpen: false,
-      blockMessage: "Les votes sont actuellement fermés. Ils seront ouverts le jour de l'événement."
+      blockMessage: "Votes temporairement indisponible. Les votes sont actuellement fermés. Ils seront ouverts très bientôt. Pour plus d'information contactez le 70359104 (WhatsApp)"
     }
     
     return NextResponse.json(transformedConfig || defaultConfig)
@@ -44,13 +44,15 @@ export async function POST(request: NextRequest) {
     const supabase = supabaseAdmin
     const body = await request.json()
     
+    console.log('🗳️ Mise à jour configuration votes:', body)
+    
     const { currentEvent, isVotingOpen, blockMessage } = body
     
     // Mettre à jour la configuration
     const { data, error } = await supabase
       .from('voting_config')
       .upsert({
-        id: 'main',
+        id: '66c822a3-798c-493f-8490-4d13d378231b', // Utiliser l'UUID existant
         current_event: currentEvent,
         is_voting_open: isVotingOpen,
         block_message: blockMessage,
@@ -60,22 +62,23 @@ export async function POST(request: NextRequest) {
       .single()
     
     if (error) {
-      console.error('Erreur lors de la mise à jour de la config:', error)
+      console.error('❌ Erreur lors de la mise à jour de la config:', error)
       return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
     }
+    
+    console.log('✅ Configuration votes mise à jour:', data)
     
     // Transformer les données de réponse en camelCase
     const transformedData = data ? {
       currentEvent: data.current_event,
       isVotingOpen: data.is_voting_open,
       blockMessage: data.block_message,
-      updatedAt: data.updated_at,
-      createdAt: data.created_at
+      lastChecked: Date.now()
     } : null
     
     return NextResponse.json(transformedData)
   } catch (error) {
-    console.error('Erreur:', error)
+    console.error('❌ Erreur POST voting-config:', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

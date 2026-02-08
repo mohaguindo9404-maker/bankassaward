@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useVotingConfig } from "@/hooks/use-api-data"
+import { VotingBlockedModal } from "@/components/voting-blocked-modal"
 import type { Category, Candidate } from "@/lib/categories"
 import type { User, Vote } from "@/hooks/use-api-data"
 import { useVotes } from "@/hooks/use-api-data"
@@ -17,22 +18,18 @@ interface VoteSectionProps {
   currentUser: User | null
   setCurrentPage: (page: Page) => void
   categories: Category[]
-  leadershipRevealed: boolean
   votingStatus?: {
     isVotingOpen: boolean
     blockMessage?: string
     lastChecked: number
   }
-  onShowVoteBlockedAlert?: (message?: string) => void
 }
 
 export function VoteSection({
   currentUser,
   setCurrentPage,
   categories,
-  leadershipRevealed,
   votingStatus,
-  onShowVoteBlockedAlert,
 }: VoteSectionProps) {
   const { votes, refetch: refetchVotes } = useVotes()
   const [selectedCandidates, setSelectedCandidates] = useState<Record<string, { id: string; name: string }>>({})
@@ -41,6 +38,7 @@ export function VoteSection({
   const [votingBlocked, setVotingBlocked] = useState(false)
   const [blockMessage, setBlockMessage] = useState("")
   const [selectedProfile, setSelectedProfile] = useState<{ candidate: Candidate; categoryId: string } | null>(null)
+  const [showBlockedModal, setShowBlockedModal] = useState(false)
 
   if (!currentUser) {
     return (
@@ -86,7 +84,7 @@ export function VoteSection({
 
     // Vérifier si les votes sont bloqués
     if (votingBlocked) {
-      alert(`❌ ${blockMessage || "Les votes sont actuellement fermés !"}\n\nVeuillez réessayer plus tard.`)
+      setShowBlockedModal(true)
       return
     }
 
@@ -146,10 +144,10 @@ export function VoteSection({
       setVotingBlocked(isBlocked)
       setBlockMessage(message)
       
-      // Afficher l'alerte uniquement lors du changement de bloqué -> débloqué
-      if (isBlocked && onShowVoteBlockedAlert) {
-        onShowVoteBlockedAlert(message)
-      }
+      // Plus d'alerte double - seul le modal s'affiche
+      // if (isBlocked && onShowVoteBlockedAlert) {
+      //   onShowVoteBlockedAlert(message)
+      // }
     }
   }, [votingStatus?.isVotingOpen, votingStatus?.blockMessage])
 
@@ -164,50 +162,6 @@ export function VoteSection({
             Sélectionnez un candidat par catégorie. Cliquez sur un candidat pour voir sa biographie détaillée.
           </p>
         </motion.div>
-
-        {/* Prix d'honneur - Affiché en haut pour les utilisateurs non-admin */}
-        {currentUser?.role !== 'SUPER_ADMIN' && categories.filter(c => c.isLeadershipPrize).map((leadershipCategory) => (
-          <motion.div
-            key={`leadership-top-${leadershipCategory.id}`}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0 }}
-            className="bg-gradient-to-r from-amber-500/10 to-orange-600/10 border border-amber-500/30 rounded-2xl p-6 mb-8 shadow-lg"
-          >
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center">
-                  <Crown className="w-6 h-6 text-amber-500" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-amber-500">Prix Leadership - Hommage Spécial</h2>
-                  <p className="text-muted-foreground">Prix d'Honneur</p>
-                </div>
-              </div>
-              
-              {leadershipRevealed ? (
-                <div className="space-y-4">
-                  <div className="bg-amber-500/10 rounded-xl p-4">
-                    <p className="text-lg font-semibold text-amber-600 dark:text-amber-400">
-                      Cet hommage est dédié à <span className="font-bold">{leadershipCategory.preAssignedWinner}</span>
-                    </p>
-                    {leadershipCategory.preAssignedWinnerBio && (
-                      <p className="text-muted-foreground mt-2">{leadershipCategory.preAssignedWinnerBio}</p>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Consultez la section résultats pour voir l'hommage complet.
-                  </p>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center gap-2 text-amber-500">
-                  <Lock className="w-4 h-4" />
-                  <p className="text-sm">Ce prix hommage sera révélé lors de la cérémonie officielle.</p>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        ))}
 
         <div className="space-y-6">
           {categories.filter(c => !c.isLeadershipPrize).map((category, index) => {
@@ -404,79 +358,10 @@ export function VoteSection({
                     </motion.div>
                   )}
                 </AnimatePresence>
-
-                {/* Leadership Prize Message */}
-                {isLeadershipPrize && (
-                  <div className="p-4 sm:p-6 pt-0 border-t border-amber-500/20">
-                    <div className="flex items-center justify-center gap-2 text-amber-500">
-                      {leadershipRevealed ? (
-                        <p className="text-sm text-center">
-                          Ce prix hommage est dédié à{" "}
-                          <span className="font-semibold">{category.preAssignedWinner}</span>. Consultez les résultats
-                          pour voir l'hommage complet.
-                        </p>
-                      ) : (
-                        <>
-                          <Lock className="w-4 h-4" />
-                          <p className="text-sm">Ce prix hommage sera révélé lors de la cérémonie officielle.</p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
               </motion.div>
             )
           })}
         </div>
-
-        {/* Prix d'honneur - Affiché en bas pour les admins */}
-        {currentUser?.role === 'SUPER_ADMIN' && categories.filter(c => c.isLeadershipPrize).map((leadershipCategory) => (
-          <motion.div
-            key={`leadership-bottom-${leadershipCategory.id}`}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-gradient-to-r from-amber-500/10 to-orange-600/10 border border-amber-500/30 rounded-2xl p-6 mt-8 shadow-lg"
-          >
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center">
-                  <Crown className="w-6 h-6 text-amber-500" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-amber-500">Prix Leadership - Hommage Spécial</h2>
-                  <p className="text-muted-foreground">Prix d'Honneur</p>
-                </div>
-              </div>
-              
-              {leadershipRevealed ? (
-                <div className="space-y-4">
-                  <div className="bg-amber-500/10 rounded-xl p-4">
-                    <p className="text-lg font-semibold text-amber-600 dark:text-amber-400">
-                      Cet hommage est dédié à <span className="font-bold">{leadershipCategory.preAssignedWinner}</span>
-                    </p>
-                    {leadershipCategory.preAssignedWinnerBio && (
-                      <p className="text-muted-foreground mt-2">{leadershipCategory.preAssignedWinnerBio}</p>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Le prix est maintenant visible par tous les utilisateurs.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-center gap-2 text-amber-500">
-                    <Lock className="w-4 h-4" />
-                    <p className="text-sm">Ce prix hommage est masqué pour le moment.</p>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    En tant qu'administrateur, vous pouvez révéler ce prix une fois le vote conclu.
-                  </p>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        ))}
       </div>
 
       {/* Vote Confirmation Modal */}
@@ -611,18 +496,12 @@ export function VoteSection({
 
               <div className="mt-6 pt-6 border-t border-border/50 space-y-3">
                 {/* Vote Button */}
-                {!hasUserVotedInCategory(selectedProfile.categoryId) && (
-                  <Button
-                    onClick={() => {
-                      handleVote(selectedProfile.categoryId, { id: selectedProfile.candidate.id, name: selectedProfile.candidate.name })
-                      setSelectedProfile(null)
-                    }}
-                    className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground"
-                  >
-                    <VoteIcon className="w-4 h-4 mr-2" />
-                    Voter pour {selectedProfile.candidate.name}
-                  </Button>
-                )}
+                <CandidateDetailModal
+                  candidate={selectedProfile.candidate}
+                  category={categories.find(c => c.id === selectedProfile.categoryId)!}
+                  onClose={() => setSelectedProfile(null)}
+                  votingStatus={votingStatus}
+                />
                 
                 {/* Already Voted Message */}
                 {hasUserVotedInCategory(selectedProfile.categoryId) && (
@@ -656,6 +535,15 @@ export function VoteSection({
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* Modal de blocage des votes */}
+      <VotingBlockedModal
+        isOpen={showBlockedModal}
+        onClose={() => setShowBlockedModal(false)}
+        message={blockMessage}
+        contactPhone="70359104 (WhatsApp)"
+        type="blocked"
+      />
     </section>
   )
 }

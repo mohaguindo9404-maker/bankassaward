@@ -46,20 +46,16 @@ import { useUsers, useCategories, useCandidates } from "@/hooks/use-api-data"
 
 interface AdminSectionProps {
   votes: Vote[]
-  leadershipRevealed: boolean
-  setLeadershipRevealed: (revealed: boolean) => void
   currentUser: User | null
   showSuccessAlert?: (message: string) => void
   showErrorAlert?: (message: string) => void
   showInfoAlert?: (message: string) => void
 }
 
-type AdminTab = "overview" | "users" | "candidates" | "voting" | "leadership" | "settings" | "messages"
+type AdminTab = "overview" | "users" | "candidates" | "voting" | "settings" | "messages"
 
 export function AdminSection({
   votes,
-  leadershipRevealed,
-  setLeadershipRevealed,
   currentUser,
   showSuccessAlert,
   showErrorAlert,
@@ -79,10 +75,6 @@ export function AdminSection({
   const [newUser, setNewUser] = useState({ name: "", phone: "", password: "" })
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
-  const [editingLeadership, setEditingLeadership] = useState(false)
-  const [leadershipBio, setLeadershipBio] = useState("")
-  const [leadershipAchievements, setLeadershipAchievements] = useState("")
-  const [leadershipImage, setLeadershipImage] = useState("")
   const [showPasswordChange, setShowPasswordChange] = useState(false)
   const [newAdminPassword, setNewAdminPassword] = useState("")
   const [confirmAdminPassword, setConfirmAdminPassword] = useState("")
@@ -98,7 +90,6 @@ export function AdminSection({
     { id: "users" as AdminTab, label: "Utilisateurs", icon: Users },
     { id: "candidates" as AdminTab, label: "Candidats", icon: Trophy },
     { id: "voting" as AdminTab, label: "Votes", icon: Lock },
-    { id: "leadership" as AdminTab, label: "Prix Leadership", icon: Crown },
     { id: "messages" as AdminTab, label: "Messages", icon: MessageSquare },
     { id: "settings" as AdminTab, label: "Paramètres", icon: Settings },
   ]
@@ -106,6 +97,13 @@ export function AdminSection({
   const totalVotes = votes.length
   const totalUsers = users.filter((u) => u.role !== "SUPER_ADMIN").length
   const totalCandidates = categories.reduce((acc, cat) => acc + cat.candidates.length, 0)
+  
+  // Calculer les votes du jour
+  const todayVotes = votes.filter(vote => {
+    const voteDate = new Date(vote.timestamp)
+    const today = new Date()
+    return voteDate.toDateString() === today.toDateString()
+  }).length
 
   const handleAddUser = async () => {
     if (!newUser.name || !newUser.phone || !newUser.password) {
@@ -167,6 +165,8 @@ export function AdminSection({
     setIsUpdating(true)
     try {
       console.log('🔄 Mise à jour candidat:', candidate.id, candidate.name)
+      console.log('📸 Image URL:', candidate.image)
+      console.log('📤 Données complètes envoyées:', JSON.stringify(candidate, null, 2))
       
       // Sauvegarder en base de données d'abord
       await updateCandidate(candidate.id, candidate)
@@ -203,37 +203,6 @@ export function AdminSection({
       setTimeout(() => setMessage(null), 3000)
     } finally {
       setIsUpdating(false)
-    }
-  }
-
-  const handleStartEditLeadership = () => {
-    const leadershipCategory = categories.find((c) => c.isLeadershipPrize)
-    if (leadershipCategory) {
-      setLeadershipBio(leadershipCategory.preAssignedWinnerBio || "")
-      setLeadershipAchievements(leadershipCategory.preAssignedWinnerAchievements?.join("\n") || "")
-      setLeadershipImage(leadershipCategory.preAssignedWinnerImage || "")
-      setEditingLeadership(true)
-    }
-  }
-
-  const handleSaveLeadership = async () => {
-    try {
-      const leadershipCategory = categories.find((c) => c.isLeadershipPrize)
-      if (leadershipCategory) {
-        await updateCategory(leadershipCategory.id, {
-          preAssignedWinnerBio: leadershipBio,
-          preAssignedWinnerAchievements: leadershipAchievements.split("\n").filter((a) => a.trim()),
-          preAssignedWinnerImage: leadershipImage,
-        })
-        await refetchCategories() // Recharger les catégories pour voir les modifications
-        setEditingLeadership(false)
-        setMessage({ type: "success", text: "Prix Leadership mis à jour avec succès !" })
-        setTimeout(() => setMessage(null), 3000)
-      }
-    } catch (error) {
-      console.error("Erreur lors de la mise à jour du prix Leadership:", error)
-      setMessage({ type: "error", text: "Erreur lors de la mise à jour du prix Leadership" })
-      setTimeout(() => setMessage(null), 3000)
     }
   }
 
@@ -396,35 +365,15 @@ export function AdminSection({
                   </div>
                 </div>
               </div>
-
-              {/* Leadership Status */}
-              <div className="md:col-span-3 bg-card border border-border/50 rounded-xl p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center ${leadershipRevealed ? "bg-amber-500/10" : "bg-muted"}`}
-                    >
-                      <Crown className={`w-6 h-6 ${leadershipRevealed ? "text-amber-500" : "text-muted-foreground"}`} />
-                    </div>
-                    <div>
-                      <p className="font-semibold">
-                        {leadershipRevealed 
-                          ? `Prix Leadership - ${categories.find((c) => c.isLeadershipPrize)?.preAssignedWinner || "Lauréat"}`
-                          : "Prix Leadership - Hommage Spécial"
-                        }
-                      </p>
-                      <p className="text-muted-foreground text-sm">
-                        {leadershipRevealed ? "Le prix a été révélé au public" : "Le prix est masqué pour le moment"}
-                      </p>
-                    </div>
+              <div className="bg-card border border-border/50 rounded-xl p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                    <BarChart3 className="w-6 h-6 text-blue-500" />
                   </div>
-                  <Button
-                    onClick={() => setActiveTab("leadership")}
-                    variant="outline"
-                    className="border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
-                  >
-                    Gérer
-                  </Button>
+                  <div>
+                    <p className="text-3xl font-bold">{todayVotes}</p>
+                    <p className="text-muted-foreground text-sm">Votes aujourd'hui</p>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -762,205 +711,6 @@ export function AdminSection({
               className="space-y-6"
             >
               <VotingControl />
-            </motion.div>
-          )}
-
-          {/* Leadership Tab */}
-          {activeTab === "leadership" && (
-            <motion.div
-              key="leadership"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-6"
-            >
-              <div className="bg-gradient-to-br from-amber-500/10 to-orange-600/10 border border-amber-500/20 rounded-2xl p-6">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-                    <Crown className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold">
-                      {leadershipRevealed 
-                        ? `Prix Leadership - ${categories.find((c) => c.isLeadershipPrize)?.preAssignedWinner || "Lauréat"}`
-                        : "Prix Leadership - Hommage Spécial"
-                      }
-                    </h2>
-                    <p className="text-muted-foreground">
-                      {leadershipRevealed
-                        ? `Ce prix spécial honore la mémoire et l'héritage de ${categories.find((c) => c.isLeadershipPrize)?.preAssignedWinner || "du lauréat"}`
-                        : "Ce prix spécial honore la mémoire et l'héritage du lauréat"
-                      }
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-card rounded-xl p-6 mb-6">
-                  <div className="flex items-center justify-center mb-4">
-                    <div>
-                      <p className="font-semibold">État de visibilité</p>
-                      <p className="text-sm text-muted-foreground">
-                        {leadershipRevealed
-                          ? "Le prix est visible par tous les utilisateurs"
-                          : "Le prix est masqué en attendant la révélation officielle"}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Bouton principal centré avec dropdown */}
-                  <div className="flex justify-center mb-4">
-                    <div className="relative">
-                      <Button
-                        onClick={() => setLeadershipRevealed(!leadershipRevealed)}
-                        className={
-                          leadershipRevealed
-                            ? "bg-muted text-foreground hover:bg-muted/80"
-                            : "bg-gradient-to-r from-amber-500 to-orange-600 text-white"
-                        }
-                      >
-                        {leadershipRevealed ? (
-                          <>
-                            <EyeOff className="w-4 h-4 mr-2" />
-                            Masquer le Prix
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="w-4 h-4 mr-2" />
-                            Révéler le Prix
-                          </>
-                        )}
-                      </Button>
-                      
-                      {/* Dropdown d'actions rapides */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="absolute -right-12 top-1/2 -translate-y-1/2 w-8 h-8 p-0"
-                          >
-                            <ChevronDown className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuItem onClick={() => setActiveTab("overview")}>
-                            <BarChart3 className="w-4 h-4 mr-2" />
-                            Aperçu
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setActiveTab("voting")}>
-                            <Lock className="w-4 h-4 mr-2" />
-                            Contrôle Votes
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setActiveTab("messages")}>
-                            <MessageSquare className="w-4 h-4 mr-2" />
-                            Messages
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setActiveTab("settings")}>
-                            <Settings className="w-4 h-4 mr-2" />
-                            Paramètres
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-
-                  {!leadershipRevealed && (
-                    <div className="flex items-center gap-2 p-3 bg-amber-500/10 rounded-lg text-amber-600 dark:text-amber-400">
-                      <AlertTriangle className="w-5 h-5" />
-                      <p className="text-sm">
-                        Attention : Une fois révélé, tous les utilisateurs pourront voir le prix et son hommage complet.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="bg-card rounded-xl overflow-hidden">
-                  <div className="h-32 bg-gradient-to-r from-amber-500 to-orange-600" />
-                  <div className="p-6 -mt-16">
-                    {editingLeadership ? (
-                      <div className="space-y-4">
-                        <ImageUpload
-                          currentImage={leadershipImage}
-                          onImageChange={setLeadershipImage}
-                          label="Photo du lauréat"
-                        />
-
-                        <div>
-                          <Label>Biographie</Label>
-                          <Textarea
-                            value={leadershipBio}
-                            onChange={(e) => setLeadershipBio(e.target.value)}
-                            rows={8}
-                            placeholder="Biographie complète..."
-                          />
-                        </div>
-
-                        <div>
-                          <Label>Réalisations (une par ligne)</Label>
-                          <Textarea
-                            value={leadershipAchievements}
-                            onChange={(e) => setLeadershipAchievements(e.target.value)}
-                            rows={5}
-                            placeholder="Réalisation 1&#10;Réalisation 2&#10;..."
-                          />
-                        </div>
-
-                        <div className="flex gap-2">
-                          <Button onClick={handleSaveLeadership}>
-                            <Save className="w-4 h-4 mr-2" />
-                            Enregistrer
-                          </Button>
-                          <Button variant="outline" onClick={() => setEditingLeadership(false)}>
-                            <X className="w-4 h-4 mr-2" />
-                            Annuler
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex items-end gap-4 mb-6">
-                          <img
-                            src={
-                              categories.find((c) => c.isLeadershipPrize)?.preAssignedWinnerImage ||
-                              "/kassim-guindo-portrait-leadership.jpg"
-                            }
-                            alt="Lauréat du Trophée Leadership"
-                            className="w-24 h-24 rounded-2xl border-4 border-background object-cover shadow-xl"
-                          />
-                          <div className="mb-2 flex-1">
-                            <h3 className="text-2xl font-bold">Lauréat du Trophée Leadership</h3>
-                            <p className="text-amber-500 font-medium">Prix d'Honneur Leadership</p>
-                          </div>
-                          <Button onClick={handleStartEditLeadership} variant="outline" size="sm">
-                            <Edit className="w-4 h-4 mr-2" />
-                            Modifier
-                          </Button>
-                        </div>
-
-                        <div className="prose prose-sm dark:prose-invert max-w-none">
-                          <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                            {categories.find((c) => c.isLeadershipPrize)?.preAssignedWinnerBio}
-                          </p>
-
-                          <div className="mt-6">
-                            <h4 className="font-semibold mb-3">Réalisations</h4>
-                            <ul className="space-y-2">
-                              {categories
-                                .find((c) => c.isLeadershipPrize)
-                                ?.preAssignedWinnerAchievements?.map((achievement, i) => (
-                                  <li key={i} className="flex items-center gap-2 text-muted-foreground">
-                                    <Check className="w-4 h-4 text-amber-500" />
-                                    {achievement}
-                                  </li>
-                                ))}
-                            </ul>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
             </motion.div>
           )}
 

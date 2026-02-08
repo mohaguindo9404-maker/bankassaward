@@ -1,10 +1,20 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Trophy, Vote, BarChart3, Sparkles, Award, ArrowRight, RefreshCw } from "lucide-react"
+import { Trophy, Vote, BarChart3, Sparkles, Award, ArrowRight, RefreshCw, Info, Bell, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import type { Page } from "@/app/page"
 import type { User } from "@/hooks/use-api-data"
+
+interface AdminMessage {
+  id: string
+  title: string
+  message: string
+  type: "info" | "warning" | "success" | "error"
+  created_at: string
+}
 
 interface HeroSectionProps {
   setCurrentPage: (page: Page) => void
@@ -15,6 +25,31 @@ interface HeroSectionProps {
 }
 
 export function HeroSection({ setCurrentPage, currentUser, categories = [], votes = [], loading = false }: HeroSectionProps) {
+  const [adminMessages, setAdminMessages] = useState<AdminMessage[]>([])
+  const [showMessages, setShowMessages] = useState(true)
+  
+  // Récupérer les messages admin
+  useEffect(() => {
+    const fetchAdminMessages = async () => {
+      try {
+        const response = await fetch('/api/admin/messages')
+        if (response.ok) {
+          const data = await response.json()
+          // Les messages sont déjà filtrés par l'API
+          setAdminMessages(data)
+        }
+      } catch (error) {
+        console.error('Erreur lors de la récupération des messages admin:', error)
+      }
+    }
+    
+    fetchAdminMessages()
+    
+    // Rafraîchir toutes les 30 secondes
+    const interval = setInterval(fetchAdminMessages, 30000)
+    return () => clearInterval(interval)
+  }, [])
+  
   // Calculer les statistiques réelles
   const totalCategories = categories.length
   const totalCandidates = categories.reduce((sum, cat) => sum + (cat.candidates?.length || 0), 0)
@@ -63,6 +98,68 @@ export function HeroSection({ setCurrentPage, currentUser, categories = [], vote
               <Sparkles className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium text-primary">Édition 2026</span>
             </motion.div>
+
+            {/* Messages Admin */}
+            {showMessages && adminMessages.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="mb-8"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-5 h-5 text-amber-500" />
+                    <span className="text-sm font-medium text-amber-500">
+                      Messages importants ({adminMessages.length})
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setShowMessages(false)}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="space-y-3 max-w-2xl mx-auto">
+                  {adminMessages.slice(0, 3).map((message, index) => (
+                    <motion.div
+                      key={message.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 + index * 0.1 }}
+                    >
+                      <Card className={`border-l-4 ${
+                        message.type === 'warning' ? 'border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20' :
+                        message.type === 'error' ? 'border-l-red-500 bg-red-50/50 dark:bg-red-950/20' :
+                        message.type === 'success' ? 'border-l-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20' :
+                        'border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20'
+                      }`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className={`w-2 h-2 rounded-full mt-2 ${
+                              message.type === 'warning' ? 'bg-amber-500' :
+                              message.type === 'error' ? 'bg-red-500' :
+                              message.type === 'success' ? 'bg-emerald-500' :
+                              'bg-blue-500'
+                            }`} />
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-sm mb-1">{message.title}</h4>
+                              <p className="text-sm text-muted-foreground">{message.message}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                  {adminMessages.length > 3 && (
+                    <p className="text-center text-sm text-muted-foreground">
+                      +{adminMessages.length - 3} autres messages...
+                    </p>
+                  )}
+                </div>
+              </motion.div>
+            )}
 
             {/* Subtitle */}
             <motion.p

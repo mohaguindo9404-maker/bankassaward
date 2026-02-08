@@ -12,15 +12,21 @@ import type { Candidate } from "@/lib/categories"
 
 interface CandidateEditorProps {
   candidate: Candidate
-  onSave: (candidate: Candidate) => void
+  onSave: (candidate: Candidate) => Promise<void>
   onCancel: () => void
 }
 
 export function CandidateEditor({ candidate, onSave, onCancel }: CandidateEditorProps) {
   const [editedCandidate, setEditedCandidate] = useState<Candidate>(candidate)
+  const [isSaving, setIsSaving] = useState(false)
 
-  const handleSave = () => {
-    onSave(editedCandidate)
+  const handleSave = async () => {
+    setIsSaving(true)
+    try {
+      await onSave(editedCandidate)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -103,11 +109,20 @@ export function CandidateEditor({ candidate, onSave, onCancel }: CandidateEditor
       </div>
 
       <div className="flex gap-2">
-        <Button onClick={handleSave}>
-          <Save className="w-4 h-4 mr-2" />
-          Enregistrer
+        <Button onClick={handleSave} disabled={isSaving}>
+          {isSaving ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+              Enregistrement...
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4 mr-2" />
+              Enregistrer
+            </>
+          )}
         </Button>
-        <Button variant="outline" onClick={onCancel}>
+        <Button variant="outline" onClick={onCancel} disabled={isSaving}>
           <X className="w-4 h-4 mr-2" />
           Annuler
         </Button>

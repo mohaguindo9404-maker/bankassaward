@@ -62,7 +62,7 @@ background: linear-gradient(90deg, #1E293B 0%, #334155 100%);
 #### Texte
 - **BANKASS** : Nom principal, gras
 - **AWARDS** : Catégorie, espacé
-- **2025** : Année de l'édition
+- **2026** : Année de l'édition
 
 ### Règles d'utilisation
 
