@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Save, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,6 +19,11 @@ interface CandidateEditorProps {
 export function CandidateEditor({ candidate, onSave, onCancel }: CandidateEditorProps) {
   const [editedCandidate, setEditedCandidate] = useState<Candidate>(candidate)
   const [isSaving, setIsSaving] = useState(false)
+
+  // Synchroniser l'état quand le candidat change (après mise à jour)
+  useEffect(() => {
+    setEditedCandidate(candidate)
+  }, [candidate])
 
   const handleSave = async () => {
     setIsSaving(true)
