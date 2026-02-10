@@ -151,7 +151,7 @@ export function AdminSection({
         achievements: ["Réalisation 1"],
       })
       setEditingCandidate({ categoryId, candidate: newCandidate })
-      await refetchCategories() // Recharger les catégories pour voir le nouveau candidat
+      await refetchCandidates() // Recharger les candidats pour voir le nouveau candidat
       setMessage({ type: "success", text: "Candidat créé avec succès !" })
       setTimeout(() => setMessage(null), 3000)
     } catch (error) {
@@ -172,7 +172,7 @@ export function AdminSection({
       await updateCandidate(candidate.id, candidate)
       
       // Puis recharger pour voir les modifications (aperçu quasi-instantané)
-      await refetchCategories()
+      await refetchCandidates()
       setEditingCandidate(null)
       setMessage({ type: "success", text: "Candidat mis à jour avec succès !" })
       setTimeout(() => setMessage(null), 3000)
@@ -194,7 +194,7 @@ export function AdminSection({
       if (!response.ok) throw new Error('Erreur lors de la suppression du candidat')
       
       // Puis recharger pour voir les modifications (aperçu quasi-instantané)
-      await refetchCategories()
+      await refetchCandidates()
       setMessage({ type: "success", text: "Candidat supprimé avec succès !" })
       setTimeout(() => setMessage(null), 3000)
     } catch (error) {
